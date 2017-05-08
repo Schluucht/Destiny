@@ -37,24 +37,25 @@ def do_query(url):
     """
     r = requests.get(url)
     # Code is not 200 if something went wrong
-    if r.status_code != 200:
-        status_string = "Request status %s in api_call.do_query: %s for url %s." % (
-            r.status_code, d_error_code_msg_s[r.status_code], url)
-        if r.status_code == 429:
-            time_sleep = 180
+    while r.status_code != 200:
+        status_string = "Request status %s in api_call.do_query: %s" % (
+            r.status_code, d_error_code_msg_s[r.status_code])
+        while r.status_code == 429:
+            time_sleep = int(r.headers["Retry-After"]) + 1
             status_string += " Retrying in %s seconds." % time_sleep
             api_log.debug(status_string)
             time.sleep(time_sleep)
-            return do_query(url)
-        else:
+            # continue loop with new request
+            r = requests.get(url)
+        # if status_code is still not 200 after the 429 loop
+        if r.status_code != 200:
             status_string += " Exiting."
             api_log.error(status_string)
             exit()
-    else:
-        # todo change this, it should be done only if needed
-        status_string = "Request status 200 in api_call.do_query for url %s" % url
-        api_log.debug(status_string)
-        time.sleep(1)
+    status_string = "Request status 200 in api_call.do_query."
+    api_log.debug(status_string)
+    # todo change this, it should be done only if needed
+    # time.sleep(1)
     return r.json()
 
 
