@@ -5,8 +5,6 @@ import requests
 
 import settings
 
-from pymongo import MongoClient
-
 stream_handler = logging.StreamHandler()
 api_log = logging.getLogger("api_call_logger")
 api_log.addHandler(stream_handler)
