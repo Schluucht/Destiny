@@ -15,7 +15,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 API_KEY = ''
 with open(os.path.join(ROOT_DIR, "config.yml")) as f:
     API_KEY = load(f)['api-key'].strip()
-    print("API KEY: %s" % API_KEY)
+    print "API KEY: %s" % API_KEY
 
 region = 'https://euw1.api.riotgames.com/'
 

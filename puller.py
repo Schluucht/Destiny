@@ -1,26 +1,20 @@
-import os
-import sys
-import mysql.connector
-
-from datetime import datetime, date
-from mysql.connector import errorcode
+from datetime import datetime
 from random import randint
-from api_call import get_league_by_summoner, get_acount_id, get_matchlist, get_match, get_timeline, get_champion
+
+import mysql.connector
+import api_call
 
 def get_champion_list():
-    champion_data = get_champion()
-    CHAMPIONS = dict()
+    champion_data = api_call.get_champion()
+    champions = dict()
     for champion in champion_data['data'].values():
         CHAMPIONS[str(champion['id'])] = champion['name']
-    return CHAMPIONS
+    return champions
 
-CHAMPIONS = get_champion_list()
-
-
-def create_table(cnx):    
+def create_table(cnx):
     cursor = cnx.cursor()
-    TABLES = {}
-    TABLES['players'] = (
+    tables = {}
+    tables['players'] = (
         "CREATE TABLE IF NOT EXISTS players("
         "  summoner_id bigint NOT NULL,"
         "  account_id bigint NOT NULL,"
@@ -29,7 +23,7 @@ def create_table(cnx):
         "  PRIMARY KEY (summoner_id)"
         ") ENGINE=InnoDB")
 
-    TABLES['match'] = (
+    tables['match'] = (
         "CREATE TABLE IF NOT EXISTS matches("
         "  gameId bigint NOT NULL,"
         "  platformId char(9),"
@@ -38,7 +32,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId)"
         ") ENGINE=InnoDB")
 
-    TABLES['participant'] = (
+    tables['participant'] = (
         "CREATE TABLE IF NOT EXISTS participant("
         "  gameId bigint NOT NULL,"
         "  participantId int,"
@@ -46,7 +40,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId, participantId)"
         ") ENGINE=InnoDB")
 
-    TABLES['stats'] = (
+    tables['stats'] = (
         "CREATE TABLE IF NOT EXISTS stats("
         "  idstats bigint NOT NULL AUTO_INCREMENT,"
         "  gameId bigint NOT NULL,"
@@ -62,7 +56,7 @@ def create_table(cnx):
         "  PRIMARY KEY (idstats)"
         ") ENGINE=InnoDB")
 
-    TABLES['itemEvent'] = (
+    tables['itemEvent'] = (
         "CREATE TABLE IF NOT EXISTS itemEvent("
         "  gameId bigint NOT NULL,"
         "  itemId int,"
@@ -71,7 +65,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,participant,timestamp)"
         ") ENGINE=InnoDB")
 
-    TABLES['killEvent'] = (
+    tables['killEvent'] = (
         "CREATE TABLE IF NOT EXISTS killEvent("
         "  gameId bigint NOT NULL,"
         "  killer char(50),"
@@ -82,7 +76,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
-    TABLES['assistEvent'] = (
+    tables['assistEvent'] = (
         "CREATE TABLE IF NOT EXISTS assistEvent("
         "  gameId bigint NOT NULL,"
         "  assist char(50),"
@@ -93,7 +87,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,assist,victim)"
         ") ENGINE=InnoDB")
 
-    TABLES['victimEvent'] = (
+    tables['victimEvent'] = (
         "CREATE TABLE IF NOT EXISTS victimEvent("
         "  gameId bigint NOT NULL,"
         "  killer char(50),"
@@ -104,15 +98,15 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
-    for name, ddl in TABLES.iteritems():
+    for name, ddl in tables.iteritems():
         try:
-            print("Creating table {}: ".format(name))
+            print "Creating table {}: ".format(name)
             cursor.execute(ddl)
         except mysql.connector.Error as err:
-            if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-                print("already exists.")
+            if err.errno == mysql.connector.errorcode.ER_TABLE_EXISTS_ERROR:
+                print "already exists."
             else:
-                print(err.msg)
+                print err.msg
     cursor.close()
     cnx.commit()
 
@@ -120,7 +114,7 @@ def close_cnx(cnx):
     cnx.close()
 
 #get all participants and tag their role
-def getParticipantChamp(match):
+def get_participant_champ(match):
     participants = dict()
     for part in match['participants']:
         if part['timeline']['lane'] == 'JUNGLE':
@@ -135,16 +129,16 @@ def getParticipantChamp(match):
 def get_connection_db():
     try:
         cnx = mysql.connector.connect(user='root', password='root',
-                              host='127.0.0.1', database='lol',
-                              port=3306)
+                                      host='127.0.0.1', database='lol',
+                                      port=3306)
         return cnx
     except mysql.connector.Error as err:
-      if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Something is wrong with your user name or password")
-      elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
-      else:
-        print(err)
+        if err.errno == mysql.connector.errorcode.ER_ACCESS_DENIED_ERROR:
+            print "Something is wrong with your user name or password"
+        elif err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+            print "Database does not exist"
+        else:
+            print err
 
 def extract_data(cnx):
     extract_summoners(cnx, 10)
@@ -158,10 +152,10 @@ def extract_summoners(cnx, nb_sum_needed):
     summoners_stack.append(21965576)
     while len(summoners_stack) < nb_sum_needed:
         #get random summoner id in stack
-        sum_id = summoners_stack[randint(0,len(summoners_stack))-1]
+        sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
         #needed to escape potential infinite loop
         summoner_destack.append(sum_id)
-        leagues = get_league_by_summoner(sum_id)
+        leagues = api_call.get_league_by_summoner(sum_id)
 
         #for each league we extract all summoner id
         for league in leagues:
@@ -175,7 +169,7 @@ def extract_summoners(cnx, nb_sum_needed):
                     #date format to mysql
                     last_refresh = last_refresh.strftime('%Y-%m-%d')
                     #get account id
-                    account_id = get_acount_id(player_id)['accountId']
+                    account_id = api_call.get_acount_id(player_id)['accountId']
                     data_player = (player_id, account_id, tier, last_refresh)
                     #dodge duplicate primary key
                     cursor.execute(add_player, data_player)
@@ -187,35 +181,34 @@ def extract_matches(cnx, nb_match_needed):
     query = ("SELECT summoner_id from players")
     summoners_stack = list()
     cursor.execute(query)
-    for (account_id) in cursor:
+    for account_id in cursor:
         summoners_stack.append(account_id[0])
 
     summoner_destack = list()
-    match_destack = list()
     match_stack = list()
-    while len(match_stack) < nb_match_needed and len(summoners_stack) > 0 :
+    while len(match_stack) < nb_match_needed and len(summoners_stack) > 0:
         #get random summoner id in stack
-        sum_id = summoners_stack[randint(0,len(summoners_stack))-1]
+        sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
         #needed to escape potential infinite loop
         summoner_destack.append(sum_id)
-        account_id = get_acount_id(sum_id)
-        matchesList = get_matchlist(account_id['accountId'])
-        if len(matchesList) > 0:
-            for match in matchesList['matches']:
+        account_id = api_call.get_acount_id(sum_id)
+        matches_list = api_call.get_matchlist(account_id['accountId'])
+        if len(matches_list) > 0:
+            for match in matches_list['matches']:
                 if match['gameId'] not in match_stack and len(match_stack) < nb_match_needed:
                     match_stack.append(match['gameId'])
 
     for match in match_stack:
-        m = get_match(match)
-        if 'queueId' in m:
-            if m['queueId'] == 420:
-                matchid = int(m['gameId'])
-                participants = getParticipantChamp(m)
+        match_data = api_call.get_match(match)
+        if 'queueId' in match_data:
+            if match_data['queueId'] == 420:
+                matchid = int(match_data['gameId'])
+                participants = get_participant_champ(match_data)
                 if len(participants) != 2:
                     continue
                 add_match = ("INSERT IGNORE INTO matches (gameId, platformId, season, timestamp) VALUES (%s, %s, %s, %s)")
-                data_match = (int(matchid), m['platformId'], int(m['seasonId']), int(m['gameDuration']))
-                cursor.execute(add_match, data_match)     
+                data_match = (int(matchid), match_data['platformId'], int(match_data['seasonId']), int(match_data['gameDuration']))
+                cursor.execute(add_match, data_match)
     cnx.commit()
     cursor.close()
 
@@ -225,39 +218,38 @@ def extract_timelines(cnx):
     #get all match ids
     matchids = list()
     cursor.execute(query)
-    for (gameId) in cursor:
-        matchids.append(gameId[0])
+    for game_id in cursor:
+        matchids.append(game_id[0])
 
     # for all match ids
     for matchid in matchids:
-        m = get_match(matchid)
+        match_data = api_call.get_match(matchid)
         # extract jungler champion name
-        participants = getParticipantChamp(m)
+        participants = get_participant_champ(match_data)
         if len(participants) != 2:
             continue
-        matchid = m['gameId']
-        timeline = get_timeline(matchid)
+        matchid = match_data['gameId']
+        timeline = api_call.get_timeline(matchid)
         for frame in timeline['frames']:
             timestamp = frame['timestamp']
-            #limit to first 15min
             if  timestamp > 901000:
                 continue
             #stats for each minute
-            for k,v in frame['participantFrames'].iteritems():
-                k = int(k)
-                if k in participants.keys():
+            for key, value in frame['participantFrames'].iteritems():
+                key = int(key)
+                if key in participants.keys():
                     add_stats = ("INSERT IGNORE INTO stats (gameId, timestamp, champion, level, currentGold, minionsKilled, xp, jungleMinionsKilled, x ,y) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                    champion = CHAMPIONS[str(participants[k]['champId'])]
-                    data_stats = (int(matchid), 
-                        timestamp, 
-                        champion, 
-                        int(v['level']), 
-                        int(v['currentGold']), 
-                        int(v['minionsKilled']), 
-                        int(v['xp']), 
-                        int(v['jungleMinionsKilled']), 
-                        int(v['position']['x']), 
-                        int(v['position']['y']))
+                    champion = CHAMPIONS[str(participants[key]['champId'])]
+                    data_stats = (int(matchid),
+                                  timestamp,
+                                  champion,
+                                  int(value['level']),
+                                  int(value['currentGold']),
+                                  int(value['minionsKilled']),
+                                  int(value['xp']),
+                                  int(value['jungleMinionsKilled']),
+                                  int(value['position']['x']),
+                                  int(value['position']['y']))
                     cursor.execute(add_stats, data_stats)
             #event(kill,deaths,assist,ward placed) for each minute and for each jungler
             for events in frame['events']:
@@ -265,36 +257,38 @@ def extract_timelines(cnx):
                     if events['participantId'] in participants.keys():
                         add_purchase = ("INSERT IGNORE INTO itemEvent (gameId, itemId, timestamp, participant) VALUES (%s, %s, %s, %s)")
                         participant = CHAMPIONS[str(participants[events['participantId']]['champId'])]
-                        data_purchase = (matchid, events['itemId'] ,events['timestamp'],participant )
+                        data_purchase = (matchid, events['itemId'], events['timestamp'], participant)
                         cursor.execute(add_purchase, data_purchase)
                 if events['type'] == 'CHAMPION_KILL':
                     if events['killerId'] in participants.keys():
                         add_kill = ("INSERT IGNORE INTO killEvent (gameId, killer, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
                         killer = CHAMPIONS[str(participants[events['killerId']]['champId'])]
                         #to do victim as champion name, not as an id
-                        data_kill = (matchid, killer, events['victimId'], events['timestamp'], events['position']['x'], events['position']['y'] )
+                        data_kill = (matchid, killer, events['victimId'], events['timestamp'], events['position']['x'], events['position']['y'])
                         cursor.execute(add_kill, data_kill)
                 if events['type'] == 'CHAMPION_KILL':
                     if events['victimId'] in participants.keys():
                         add_victim = ("INSERT IGNORE INTO victimEvent (gameId, killer, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
-                        victim = CHAMPIONS[str(participants[events['victimId']])]
+                        victim = CHAMPIONS[str(participants[events['victimId']]['champId'])]
                         #to do victim as champion name, not as an id
-                        data_victim = (matchid, assist, events['killerId'], events['timestamp'], events['position']['x'], events['position']['y'] )
+                        data_victim = (matchid, events['killerId'], victim, events['timestamp'], events['position']['x'], events['position']['y'])
                         cursor.execute(add_victim, data_victim)
                 if events['type'] == 'CHAMPION_KILL':
-                    for p in participants.keys():
-                        if p in events['assistingParticipantIds']:
+                    for participant_key in participants:
+                        if participant_key in events['assistingParticipantIds']:
                             add_assist = ("INSERT IGNORE INTO assistEvent (gameId, assist, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
-                            assist = CHAMPIONS[str(participants[p]['champId'])]
+                            assist = CHAMPIONS[str(participants[participant_key]['champId'])]
                             #to do victim as champion name, not as an id
-                            data_assist = (matchid, assist, events['victimId'], events['timestamp'], events['position']['x'], events['position']['y'] )
+                            data_assist = (matchid, assist, events['victimId'], events['timestamp'], events['position']['x'], events['position']['y'])
                             cursor.execute(add_assist, data_assist)
     cnx.commit()
     cursor.close()
 
 if __name__ == '__main__':
-    cnx = get_connection_db()
-    create_table(cnx)
-    extract_data(cnx)
-    close_cnx(cnx)
+    global CHAMPIONS
+    CHAMPIONS = get_champion_list()
+    CONNEXION = get_connection_db()
+    create_table(CONNEXION)
+    extract_data(CONNEXION)
+    close_cnx(CONNEXION)
  
