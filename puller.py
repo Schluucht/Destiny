@@ -8,7 +8,7 @@ def get_champion_list():
     champion_data = api_call.get_champion()
     champions = dict()
     for champion in champion_data['data'].values():
-        CHAMPIONS[str(champion['id'])] = champion['name']
+        champions[str(champion['id'])] = champion['name']
     return champions
 
 def create_table(cnx):
