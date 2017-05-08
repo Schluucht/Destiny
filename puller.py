@@ -298,6 +298,13 @@ def extract_timelines(cnx):
 
 
 def clean_database(cnx):
+    """
+    Fully Truncate all the tables of the database.
+
+    Ask for confirmation before truncate.
+    :param cnx: Connexion object
+    :return: None
+    """
     confirmation = raw_input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
     if confirmation != 'y':
         db_log.info("DB won't be empty.")
