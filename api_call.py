@@ -1,7 +1,7 @@
-import requests
 import time
 import logging
 import os
+import requests
 
 import settings
 
