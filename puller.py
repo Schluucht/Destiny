@@ -5,9 +5,17 @@ import mysql.connector
 from datetime import datetime, date
 from mysql.connector import errorcode
 from random import randint
-from api_call import get_league_by_summoner, get_acount_id, get_matchlist, get_match, get_timeline
+from api_call import get_league_by_summoner, get_acount_id, get_matchlist, get_match, get_timeline, get_champion
 
-CHAMPIONS = {"62":"Wukong","24":"Jax","35":"Shaco","19":"Warwick","76":"Nidalee","143":"Zyra","240":"Kled","63":"Brand","33":"Rammus","420":"Illaoi","42":"Corki","201":"Braum","34":"Anivia","23":"Tryndamere","21":"Miss Fortune","83":"Yorick","101":"Xerath","15":"Sivir","92":"Riven","61":"Orianna","41":"Gangplank","54":"Malphite","78":"Poppy","30":"Karthus","126":"Jayce","53":"Blitzcrank","48":"Trundle","113":"Sejuani","104":"Graves","236":"Lucian","150":"Gnar","99":"Lux","102":"Shyvana","58":"Renekton","114":"Fiora","222":"Jinx","429":"Kalista","105":"Fizz","38":"Kassadin","37":"Sona","8":"Vladimir","112":"Viktor","203":"Kindred","69":"Cassiopeia","57":"Maokai","412":"Thresh","10":"Kayle","120":"Hecarim","121":"Kha'Zix","2":"Olaf","115":"Ziggs","134":"Syndra","36":"Dr. Mundo","43":"Karma","1":"Annie","84":"Akali","89":"Leona","157":"Yasuo","85":"Kennen","107":"Rengar","13":"Ryze","98":"Shen","154":"Zac","80":"Pantheon","50":"Swain","432":"Bard","14":"Sion","67":"Vayne","75":"Nasus","4":"Twisted Fate","31":"Cho'Gath","77":"Udyr","25":"Morgana","427":"Ivern","106":"Volibear","51":"Caitlyn","122":"Darius","56":"Nocturne","68":"Rumble","26":"Zilean","268":"Azir","131":"Diana","72":"Skarner","17":"Teemo","6":"Urgot","32":"Amumu","3":"Galio","74":"Heimerdinger","22":"Ashe","161":"Vel'Koz","27":"Singed","163":"Taliyah","110":"Varus","29":"Twitch","86":"Garen","20":"Nunu","11":"Master Yi","60":"Elise","12":"Alistar","55":"Katarina","245":"Ekko","82":"Mordekaiser","117":"Lulu","164":"Camille","266":"Aatrox","119":"Draven","223":"Tahm Kench","9":"Fiddlesticks","91":"Talon","5":"Xin Zhao","136":"Aurelion Sol","64":"Lee Sin","44":"Taric","90":"Malzahar","127":"Lissandra","18":"Tristana","421":"Rek'Sai","39":"Irelia","59":"Jarvan IV","267":"Nami","202":"Jhin","16":"Soraka","45":"Veigar","40":"Janna","111":"Nautilus","28":"Evelynn","79":"Gragas","238":"Zed","254":"Vi","96":"Kog'Maw","103":"Ahri","133":"Quinn","7":"LeBlanc","81":"Ezreal"}
+def get_champion_list():
+    champion_data = get_champion()
+    CHAMPIONS = dict()
+    for champion in champion_data['data'].values():
+        CHAMPIONS[str(champion['id'])] = champion['name']
+    return CHAMPIONS
+
+CHAMPIONS = get_champion_list()
+
 
 def create_table(cnx):    
     cursor = cnx.cursor()
