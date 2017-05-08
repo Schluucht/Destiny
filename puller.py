@@ -5,7 +5,9 @@ import mysql.connector
 from datetime import datetime, date
 from mysql.connector import errorcode
 from random import randint
+
 from api_call import get_league_by_summoner, get_acount_id, get_matchlist, get_match, get_timeline, get_champion
+import settings
 
 
 def get_champion_list():
@@ -18,8 +20,7 @@ def get_champion_list():
 CHAMPIONS = get_champion_list()
 
 
-# Todo faire des objets qui encapsulent les requetes
-# Faire un check des headers pour les calls a l'API
+# Todo faire des objets qui encapsulent les requetes. est-ce vraiment necessaire?
 
 
 def create_table(cnx):
@@ -140,11 +141,9 @@ def getParticipantChamp(match):
 
 
 #create properly a mysql connection
-def get_connection_db():
+def get_connection_db(*args, **kwargs):
     try:
-        cnx = mysql.connector.connect(user='', password='',
-                              host='127.0.0.1', database='lol',
-                              port=3306)
+        cnx = mysql.connector.connect(*args, **kwargs)
         return cnx
     except mysql.connector.Error as err:
       if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
@@ -307,7 +306,9 @@ def extract_timelines(cnx):
     cursor.close()
 
 if __name__ == '__main__':
-    cnx = get_connection_db()
+    cnx = get_connection_db(user=settings.DB_USER, password=settings.DB_PASSWORD,
+                            host=settings.DB_HOST, database=settings.DB_NAME,
+                            port=settings.DB_PORT)
     create_table(cnx)
     extract_data(cnx)
     close_cnx(cnx)

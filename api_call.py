@@ -3,24 +3,11 @@ import time
 import logging
 import os
 
+import settings
+
 from pymongo import MongoClient
-from yaml import load
 
-
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-API_KEY = ''
-with open(os.path.join(ROOT_DIR, "config.yml")) as f:
-    API_KEY = load(f)['api-key'].strip()
-    print("API KEY: %s" % API_KEY)
-
-region = 'https://euw1.api.riotgames.com/'
 stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
 api_log = logging.getLogger("api_call_logger")
 api_log.addHandler(stream_handler)
 api_log.setLevel(logging.DEBUG)
@@ -50,25 +37,23 @@ def do_query(url):
     """
     r = requests.get(url)
     # Code is not 200 if something went wrong
+
     while r.status_code != 200:
-        status_string = "Request status %s in api_call.do_query: %s" % (
+        status_string = "Request status %s in api_call.do_query %s" % (
             r.status_code, d_error_code_msg_s[r.status_code])
         while r.status_code == 429:
-            time_sleep = int(r.headers["Retry-After"]) + 1
-            status_string += " Retrying in %s seconds." % time_sleep
+            time_sleep = int(r.headers["Retry-After"]) + 2
+            status_string += " -> Retrying in %s seconds." % time_sleep
             api_log.debug(status_string)
             time.sleep(time_sleep)
             # continue loop with new request
             r = requests.get(url)
         # if status_code is still not 200 after the 429 loop
         if r.status_code != 200:
-            status_string += " Exiting."
+            status_string += ". url: %s -> Exiting." % url
             api_log.error(status_string)
             exit()
-    status_string = "Request status 200 in api_call.do_query."
-    api_log.debug(status_string)
-    # todo change this, it should be done only if needed
-    # time.sleep(1)
+    api_log.debug("Request status %s in api_call.do_query -> Succeed." % r.status_code)
     return r.json()
 
 
@@ -78,7 +63,7 @@ def get_challenger():
 
     :return:
     """
-    url = region + 'lol/league/v3/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key='+API_KEY
+    url = settings.REGION + 'lol/league/v3/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + settings.API_KEY
     return do_query(url)
 
 
@@ -89,7 +74,7 @@ def get_league_by_summoner(id_summoner):
     :param id_summoner:
     :return:
     """
-    url = region + '/lol/league/v3/leagues/by-summoner/'+str(id_summoner)+'?api_key='+API_KEY
+    url = settings.REGION + '/lol/league/v3/leagues/by-summoner/'+str(id_summoner)+'?api_key='+settings.API_KEY
     return do_query(url)
 
 
@@ -100,7 +85,7 @@ def get_acount_id(id_summoner):
     :param id_summoner:
     :return:
     """
-    url = region + '/lol/summoner/v3/summoners/'+str(id_summoner)+'?api_key='+API_KEY
+    url = settings.REGION + '/lol/summoner/v3/summoners/'+str(id_summoner)+'?api_key='+settings.API_KEY
     return do_query(url)
 
 
@@ -111,7 +96,7 @@ def get_matchlist(id_account):
     :param id_account:
     :return:
     """
-    url = region + '/lol/match/v3/matchlists/by-account/'+str(id_account)+'/recent?api_key='+API_KEY
+    url = settings.REGION + '/lol/match/v3/matchlists/by-account/'+str(id_account)+'/recent?api_key='+settings.API_KEY
     return do_query(url)
 
 
@@ -122,7 +107,7 @@ def get_match(id_match):
     :param id_match:
     :return:
     """
-    url = region + '/lol/match/v3/matches/'+str(id_match)+'?api_key='+API_KEY
+    url = settings.REGION + '/lol/match/v3/matches/'+str(id_match)+'?api_key='+settings.API_KEY
     return do_query(url)
 
 
@@ -133,5 +118,15 @@ def get_timeline(id_match):
     :param id_match:
     :return:
     """
-    url = region + '/lol/match/v3/timelines/by-match/'+str(id_match)+'?api_key='+API_KEY
+    url = settings.REGION + '/lol/match/v3/timelines/by-match/'+str(id_match)+'?api_key='+settings.API_KEY
+    return do_query(url)
+
+
+def get_champion():
+    """
+    API documentation: https://developer.riotgames.com/api-methods/#static-data-v3/GET_getChampionList
+
+    :return:
+    """
+    url = settings.REGION + '/lol/static-data/v3/champions?api_key=' + settings.API_KEY
     return do_query(url)
