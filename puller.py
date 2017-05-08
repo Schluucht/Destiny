@@ -1,5 +1,6 @@
 from datetime import datetime
 from random import randint
+import logging
 
 import mysql.connector
 
@@ -295,13 +296,44 @@ def extract_timelines(cnx):
     cnx.commit()
     cursor.close()
 
+
+def clean_database(cnx):
+    confirmation = raw_input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
+    if confirmation != 'y':
+        db_log.info("DB won't be empty.")
+        return
+
+    cursor = cnx.cursor()
+    query = ("SHOW TABLES;")
+    cursor.execute(query)
+    tables = list(cursor)
+
+    for table in tables:
+        table_name = table[0]
+        cursor.execute("TRUNCATE TABLE %s" % table_name)
+        db_log.info("%s table truncated." % table_name)
+
+    cursor = cnx.cursor()
+    query = ("SHOW TABLES;")
+    cursor.execute(query)
+
+
 if __name__ == '__main__':
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+
+    db_log = logging.getLogger("db_logger")
+    db_log.addHandler(stream_handler)
+    db_log.setLevel(logging.DEBUG)
+
     CONNEXION = get_connection_db(user=settings.DB_USER, password=settings.DB_PASSWORD,
                             host=settings.DB_HOST, database=settings.DB_NAME,
                             port=settings.DB_PORT)
 
-    # global CHAMPIONS
+    global CHAMPIONS
     CHAMPIONS = get_champion_list()
     create_table(CONNEXION)
     extract_data(CONNEXION)
+
+    clean_database(CONNEXION)
     close_cnx(CONNEXION)
