@@ -1,8 +1,9 @@
 api-key:
   "riot-games-api-key"
 
-mysql:
+mysql_database:
   host: 127.0.0.1
+  name: "lol"
   port: 3306
   user: "user"
   password: "password"
