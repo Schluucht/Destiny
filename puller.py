@@ -6,6 +6,7 @@ import mysql.connector
 
 import api_call
 import settings
+from models.players import Players
 
 
 def get_champion_list():
@@ -19,6 +20,7 @@ def get_champion_list():
 def create_table(cnx):
     cursor = cnx.cursor()
     tables = {}
+    # done
     tables['players'] = (
         "CREATE TABLE IF NOT EXISTS players("
         "  summonerId bigint NOT NULL,"
@@ -28,6 +30,7 @@ def create_table(cnx):
         "  PRIMARY KEY (summoner_id)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['match'] = (
         "CREATE TABLE IF NOT EXISTS matches("
         "  gameId bigint NOT NULL,"
@@ -37,6 +40,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['participant'] = (
         "CREATE TABLE IF NOT EXISTS participant("
         "  gameId bigint NOT NULL,"
@@ -45,6 +49,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId, participantId)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['stats'] = (
         "CREATE TABLE IF NOT EXISTS stats("
         "  idstats bigint NOT NULL AUTO_INCREMENT,"
@@ -61,6 +66,7 @@ def create_table(cnx):
         "  PRIMARY KEY (idstats)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['itemEvent'] = (
         "CREATE TABLE IF NOT EXISTS itemEvent("
         "  gameId bigint NOT NULL,"
@@ -70,6 +76,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,participant,timestamp)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['killEvent'] = (
         "CREATE TABLE IF NOT EXISTS killEvent("
         "  gameId bigint NOT NULL,"
@@ -81,6 +88,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['assistEvent'] = (
         "CREATE TABLE IF NOT EXISTS assistEvent("
         "  gameId bigint NOT NULL,"
@@ -92,6 +100,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,assist,victim)"
         ") ENGINE=InnoDB")
 
+    # done
     tables['victimEvent'] = (
         "CREATE TABLE IF NOT EXISTS victimEvent("
         "  gameId bigint NOT NULL,"
@@ -103,6 +112,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
+    # todo change this with create tables from sqlalchemy
     for name, ddl in tables.iteritems():
         try:
             print "Creating table {}: ".format(name)
@@ -170,6 +180,7 @@ def extract_summoners(cnx, nb_sum_needed):
             tier = league['tier']
             for entrie in league['entries']:
                 if entrie['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
+                    # orm
                     add_player = ("INSERT IGNORE INTO players (summoner_id, account_id, tier, last_refresh) VALUES (%s, %s, %s, %s)")
                     summoners_stack.append(entrie['playerOrTeamId'])
                     player_id = int(entrie['playerOrTeamId'])
@@ -215,6 +226,7 @@ def extract_matches(cnx, nb_match_needed):
                 participants = get_participant_champ(match_data)
                 if len(participants) != 2:
                     continue
+                # orm
                 add_match = ("INSERT IGNORE INTO matches (gameId, platformId, season, timestamp) VALUES (%s, %s, %s, %s)")
                 data_match = (int(matchid), match_data['platformId'], int(match_data['seasonId']), int(match_data['gameDuration']))
                 cursor.execute(add_match, data_match)
@@ -226,6 +238,7 @@ def extract_timelines(cnx):
     global CHAMPIONS
 
     cursor = cnx.cursor()
+    # orm
     query = ("SELECT gameId from matches")
     #get all match ids
     matchids = list()
@@ -250,6 +263,7 @@ def extract_timelines(cnx):
             for key, value in frame['participantFrames'].iteritems():
                 key = int(key)
                 if key in participants.keys():
+                    # orm
                     add_stats = ("INSERT IGNORE INTO stats (gameId, timestamp, champion, level, currentGold, minionsKilled, xp, jungleMinionsKilled, x ,y) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
                     champion = CHAMPIONS[str(participants[key]['champId'])]
                     data_stats = (int(matchid),
@@ -267,12 +281,14 @@ def extract_timelines(cnx):
             for events in frame['events']:
                 if events['type'] == 'ITEM_PURCHASED':
                     if events['participantId'] in participants.keys():
+                        # orm
                         add_purchase = ("INSERT IGNORE INTO itemEvent (gameId, itemId, timestamp, participant) VALUES (%s, %s, %s, %s)")
                         participant = CHAMPIONS[str(participants[events['participantId']]['champId'])]
                         data_purchase = (matchid, events['itemId'], events['timestamp'], participant)
                         cursor.execute(add_purchase, data_purchase)
                 if events['type'] == 'CHAMPION_KILL':
                     if events['killerId'] in participants.keys():
+                        # orm
                         add_kill = ("INSERT IGNORE INTO killEvent (gameId, killer, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
                         killer = CHAMPIONS[str(participants[events['killerId']]['champId'])]
                         #to do victim as champion name, not as an id
@@ -280,6 +296,7 @@ def extract_timelines(cnx):
                         cursor.execute(add_kill, data_kill)
                 if events['type'] == 'CHAMPION_KILL':
                     if events['victimId'] in participants.keys():
+                        # orm
                         add_victim = ("INSERT IGNORE INTO victimEvent (gameId, killer, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
                         victim = CHAMPIONS[str(participants[events['victimId']]['champId'])]
                         #to do victim as champion name, not as an id
@@ -288,6 +305,7 @@ def extract_timelines(cnx):
                 if events['type'] == 'CHAMPION_KILL':
                     for participant_key in participants:
                         if participant_key in events['assistingParticipantIds']:
+                            # orm
                             add_assist = ("INSERT IGNORE INTO assistEvent (gameId, assist, victim, timestamp, x, y) VALUES (%s, %s, %s, %s, %s, %s)")
                             assist = CHAMPIONS[str(participants[participant_key]['champId'])]
                             #to do victim as champion name, not as an id
@@ -296,7 +314,7 @@ def extract_timelines(cnx):
     cnx.commit()
     cursor.close()
 
-
+# todo change this with sqlalchemy cleaing tools
 def clean_database(cnx):
     confirmation = raw_input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
     if confirmation != 'y':
@@ -319,6 +337,9 @@ def clean_database(cnx):
 
 
 if __name__ == '__main__':
+    a = Players(summonerId=1, accountId=1, tier="GOLD")
+    print(a)
+
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
 
