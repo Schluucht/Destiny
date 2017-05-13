@@ -21,8 +21,8 @@ def create_table(cnx):
     tables = {}
     tables['players'] = (
         "CREATE TABLE IF NOT EXISTS players("
-        "  summoner_id bigint NOT NULL,"
-        "  account_id bigint NOT NULL,"
+        "  summonerId bigint NOT NULL,"
+        "  accountId bigint NOT NULL,"
         "  tier char(12),"
         "  last_refresh date NOT NULL,"
         "  PRIMARY KEY (summoner_id)"
