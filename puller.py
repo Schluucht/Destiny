@@ -122,20 +122,11 @@ def close_cnx(cnx):
 
 
 def role_checker(roles):
-    if len(roles) != 5:
-        return False
-    if 'TOP SOLO' not in roles:
-        return False
-    if 'MIDDLE SOLO' not in roles:
-        return False
-    if 'BOTTOM DUO_SUPPORT' not in roles:
-        return False
-    if 'BOTTOM DUO_CARRY' not in roles:
-        return False
-    if 'JUNGLE NONE' not in roles:
+    set_supported_roles = {'TOP SOLO','MIDDLE SOLO','BOTTOM DUO_SUPPORT','BOTTOM DUO_CARRY','JUNGLE NONE'}
+    if len(set(roles).difference(set_supported_roles)) != 0:
         return False
     else:
-        return 'TRUE'
+       return True
 
 def construct_role_list(data,side):
     roles = set()
@@ -143,7 +134,7 @@ def construct_role_list(data,side):
         for i in range (0,5):
             role = data['participants'][i]['timeline']['lane'] + ' ' + data['participants'][i]['timeline']['role']
             roles.add(role)
-    if side == 'BLUE':
+    elif side == 'BLUE':
         for i in range (5,10):
             role = data['participants'][i]['timeline']['lane'] + ' ' + data['participants'][i]['timeline']['role']
             roles.add(role)
@@ -217,7 +208,6 @@ def extract_matches(cnx, nb_match_needed):
     cursor.execute(query)
     for account_id in cursor:
         summoners_stack.append(account_id[0])
-
     summoner_destack = list()
     match_stack = list()
     while len(match_stack) < nb_match_needed and len(summoners_stack) > 0:
