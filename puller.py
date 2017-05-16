@@ -1,9 +1,8 @@
 from datetime import datetime
 from random import randint
 import logging
-
+import sys
 import mysql.connector
-
 import api_call
 import settings
 
@@ -113,6 +112,7 @@ def create_table(cnx):
                 db_log.error("already exists.")
             else:
                 db_log.error(err.msg)
+            sys.exit(1)
     cursor.close()
     cnx.commit()
 
@@ -164,6 +164,7 @@ def get_connection_db(*args, **kwargs):
             db_log.error("Database does not exist")
         else:
             db_log.error(err)
+        sys.exit(1)
 
 def extract_data(cnx):
     extract_summoners(cnx, 10)
