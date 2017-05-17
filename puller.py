@@ -16,6 +16,8 @@ def get_champion_list():
 
 
 def create_table(cnx):
+
+
     cursor = cnx.cursor()
     tables = {}
     tables['players'] = (
@@ -127,6 +129,7 @@ def role_checker(roles):
         return False
     else:
        return True
+
 
 def construct_role_list(data,side):
     roles = set()
@@ -326,7 +329,7 @@ def clean_database(cnx):
     :param cnx: Connexion object
     :return: None
     """
-    confirmation = raw_input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
+    confirmation = input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
     if confirmation != 'y':
         db_log.info("DB won't be empty.")
         return
