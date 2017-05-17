@@ -103,7 +103,7 @@ def create_table(cnx):
         "  PRIMARY KEY (gameId,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
-    for name, ddl in tables.iteritems():
+    for name, ddl in tables.items():
         try:
             db_log.info("Creating table {}: ".format(name))
             cursor.execute(ddl)
@@ -263,7 +263,7 @@ def extract_timelines(cnx):
             #stats for each minute
             nb_frame_viewed = nb_frame_viewed +1
             if nb_frame_viewed < len(timeline['frames']):
-                for key, value in frame['participantFrames'].iteritems():
+                for key, value in frame['participantFrames'].items():
                     key = int(key)
                     add_stats = ("INSERT IGNORE INTO stats (gameId, timestamp, champion, level, currentGold, minionsKilled, xp, jungleMinionsKilled, x ,y) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
                     champion = participants[key]
