@@ -26,7 +26,7 @@ def create_table(cnx):
         "  accountId bigint NOT NULL,"
         "  tier char(12),"
         "  last_refresh date NOT NULL,"
-        "  PRIMARY KEY (summoner_id)"
+        "  PRIMARY KEY (summonerId)"
         ") ENGINE=InnoDB")
 
     tables['match'] = (
@@ -131,6 +131,7 @@ def role_checker(roles):
     else:
        return True
 
+
 def construct_role_list(data,side):
     roles = set()
     if side == 'RED':
@@ -169,6 +170,7 @@ def get_connection_db(*args, **kwargs):
             db_log.error(err)
         sys.exit(1)
 
+
 def extract_data(cnx):
     extract_summoners(cnx, 10)
     extract_matches(cnx, 10)
@@ -193,7 +195,7 @@ def extract_summoners(cnx, nb_sum_needed):
             for entrie in league['entries']:
                 if entrie['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
                     # orm
-                    add_player = ("INSERT IGNORE INTO players (summoner_id, account_id, tier, last_refresh) VALUES (%s, %s, %s, %s)")
+                    add_player = ("INSERT IGNORE INTO players (summonerId, accountId, tier, last_refresh) VALUES (%s, %s, %s, %s)")
                     summoners_stack.append(entrie['playerOrTeamId'])
                     player_id = int(entrie['playerOrTeamId'])
                     last_refresh = datetime.now()
@@ -207,9 +209,10 @@ def extract_summoners(cnx, nb_sum_needed):
                     cnx.commit()
     cursor.close()
 
+
 def extract_matches(cnx, nb_match_needed):
     cursor = cnx.cursor()
-    query = ("SELECT summoner_id from players")
+    query = ("SELECT summonerId from players")
     summoners_stack = list()
     cursor.execute(query)
     for account_id in cursor:
@@ -339,12 +342,12 @@ def clean_database(cnx):
     :param cnx: Connexion object
     :return: None
     """
-    confirmation = raw_input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
+    confirmation = input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
     if confirmation != 'y':
         db_log.info("DB won't be empty.")
         return
 
-    cursor = cnx.cursor()
+    cursor = cnx.cursor(buffered=True)
     query = ("SHOW TABLES;")
     cursor.execute(query)
     tables = list(cursor)
@@ -354,9 +357,7 @@ def clean_database(cnx):
         cursor.execute("TRUNCATE TABLE %s" % table_name)
         db_log.info("%s table truncated." % table_name)
 
-    cursor = cnx.cursor()
-    query = ("SHOW TABLES;")
-    cursor.execute(query)
+    cursor.close()
 
 
 if __name__ == '__main__':
@@ -373,6 +374,7 @@ if __name__ == '__main__':
     CONNEXION = get_connection_db(user=settings.DB_USER, password=settings.DB_PASSWORD,
                             host=settings.DB_HOST, database=settings.DB_NAME,
                             port=settings.DB_PORT)
+    clean_database(CONNEXION)
 
     global CHAMPIONS
     CHAMPIONS = get_champion_list()
