@@ -3,10 +3,13 @@ from random import randint
 import logging
 import sys
 import mysql.connector
+from sqlalchemy.engine import create_engine
+from sqlalchemy.orm.session import sessionmaker
 
 import api_call
 import settings
-from models.players import Players
+from models import Players, Matches
+from models.base import Base
 
 
 def get_champion_list():
@@ -17,107 +20,10 @@ def get_champion_list():
     return champions
 
 
-def create_table(cnx):
-    cursor = cnx.cursor()
-    tables = {}
-    tables['players'] = (
-        "CREATE TABLE IF NOT EXISTS players("
-        "  summonerId bigint NOT NULL,"
-        "  accountId bigint NOT NULL,"
-        "  tier char(12),"
-        "  last_refresh date NOT NULL,"
-        "  PRIMARY KEY (summonerId)"
-        ") ENGINE=InnoDB")
-
-    tables['match'] = (
-        "CREATE TABLE IF NOT EXISTS matches("
-        "  gameId bigint NOT NULL,"
-        "  platformId char(9),"
-        "  season int,"
-        "  timestamp bigint,"
-        "  PRIMARY KEY (gameId)"
-        ") ENGINE=InnoDB")
-# todo change model championId int -> role char championId char
-    tables['participant'] = (
-        "CREATE TABLE IF NOT EXISTS participant("
-        "  gameId bigint NOT NULL,"
-        "  participantId int,"
-        "  role char(20),"
-        "  championId char(50),"
-        "  PRIMARY KEY (gameId, participantId)"
-        ") ENGINE=InnoDB")
-
-    tables['stats'] = (
-        "CREATE TABLE IF NOT EXISTS stats("
-        "  idstats bigint NOT NULL AUTO_INCREMENT,"
-        "  gameId bigint NOT NULL,"
-        "  timestamp bigint NOT NULL,"
-        "  champion char(50),"
-        "  level int,"
-        "  currentGold int,"
-        "  minionsKilled int,"
-        "  xp int,"
-        "  jungleMinionsKilled int,"
-        "  x int,"
-        "  y int,"
-        "  PRIMARY KEY (idstats)"
-        ") ENGINE=InnoDB")
-
-    tables['itemEvent'] = (
-        "CREATE TABLE IF NOT EXISTS itemEvent("
-        "  gameId bigint NOT NULL,"
-        "  itemId int,"
-        "  timestamp int,"
-        "  participant char(50),"
-        "  PRIMARY KEY (gameId,participant,timestamp)"
-        ") ENGINE=InnoDB")
-
-    tables['killEvent'] = (
-        "CREATE TABLE IF NOT EXISTS killEvent("
-        "  gameId bigint NOT NULL,"
-        "  killer char(50),"
-        "  victim char(50),"
-        "  timestamp int,"
-        "  x int,"
-        "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,killer,victim)"
-        ") ENGINE=InnoDB")
-
-    tables['assistEvent'] = (
-        "CREATE TABLE IF NOT EXISTS assistEvent("
-        "  gameId bigint NOT NULL,"
-        "  assist char(50),"
-        "  victim char(50),"
-        "  timestamp int,"
-        "  x int,"
-        "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,assist,victim)"
-        ") ENGINE=InnoDB")
-
-    tables['victimEvent'] = (
-        "CREATE TABLE IF NOT EXISTS victimEvent("
-        "  gameId bigint NOT NULL,"
-        "  killer char(50),"
-        "  victim char(50),"
-        "  timestamp int,"
-        "  x int,"
-        "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,killer,victim)"
-        ") ENGINE=InnoDB")
-
-    # todo change this with create tables from sqlalchemy
-    for name, ddl in tables.items():
-        try:
-            db_log.info("Creating table {}: ".format(name))
-            cursor.execute(ddl)
-        except mysql.connector.Error as err:
-            if err.errno == mysql.connector.errorcode.ER_TABLE_EXISTS_ERROR:
-                db_log.error("already exists.")
-            else:
-                db_log.error(err.msg)
-            sys.exit(1)
-    cursor.close()
-    cnx.commit()
+def create_tables(p_engine):
+    db_log.debug("Start creating tables with engine %s." % p_engine)
+    Base.metadata.create_all(p_engine)
+    db_log.info("Tables created")
 
 
 def close_cnx(cnx):
@@ -129,7 +35,7 @@ def role_checker(roles):
     if len(set(roles).difference(set_supported_roles)) != 0:
         return False
     else:
-       return True
+        return True
 
 
 def construct_role_list(data,side):
@@ -147,7 +53,7 @@ def construct_role_list(data,side):
 
 #get all participants and tag their role
 def get_participant_champ(match):
-    participants = {0 : 'Unknown'}
+    participants = {0: 'Unknown'}
     blue_side = construct_role_list(match,'BLUE')
     red_side = construct_role_list(match,'RED')
     if role_checker(blue_side) and role_checker(red_side):
@@ -171,58 +77,60 @@ def get_connection_db(*args, **kwargs):
         sys.exit(1)
 
 
-def extract_data(cnx):
-    extract_summoners(cnx, 10)
-    extract_matches(cnx, 10)
-    extract_timelines(cnx)
+def extract_data(p_session):
+    extract_summoners(p_session, 5)
+    extract_matches(p_session, 5)
+    # orm
+    # extract_timelines(cnx)
 
 
-def extract_summoners(cnx, nb_sum_needed):
-    cursor = cnx.cursor()
+def extract_summoners(p_session, nb_sum_needed):
     summoner_destack = list()
     summoners_stack = list()
-    summoners_stack.append(21965576)
+    # summoners_stack.append(85891136)
+    summoners_stack.append(53668796)  # Alderiate ;)
     while len(summoners_stack) < nb_sum_needed:
-        #get random summoner id in stack
+        # get random summoner id in stack
         sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
-        #needed to escape potential infinite loop
+        # needed to escape potential infinite loop
         summoner_destack.append(sum_id)
         leagues = api_call.get_league_by_summoner(sum_id)
 
-        #for each league we extract all summoner id
+        # for each league we extract all summoner id
         for league in leagues:
             tier = league['tier']
             for entrie in league['entries']:
                 if entrie['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
-                    # orm
-                    add_player = ("INSERT IGNORE INTO players (summonerId, accountId, tier, last_refresh) VALUES (%s, %s, %s, %s)")
                     summoners_stack.append(entrie['playerOrTeamId'])
                     player_id = int(entrie['playerOrTeamId'])
                     last_refresh = datetime.now()
-                    #date format to mysql
+                    # date format to mysql
                     last_refresh = last_refresh.strftime('%Y-%m-%d')
-                    #get account id
+                    # get account id
                     account_id = api_call.get_acount_id(player_id)['accountId']
+                    # get the column names of the table
+                    fields_player = (str(col).split(".")[-1] for col in Players.__table__.columns)
                     data_player = (player_id, account_id, tier, last_refresh)
-                    #dodge duplicate primary key
-                    cursor.execute(add_player, data_player)
-                    cnx.commit()
-    cursor.close()
+                    # what is this comment?
+                    # dodge duplicate primary key
+                    # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
+                    new_players_entry = Players(**dict(zip(fields_player, data_player)))
+                    p_session.add(new_players_entry)
+        # only one commit after adding every player to the session
+        p_session.commit()
 
 
-def extract_matches(cnx, nb_match_needed):
-    cursor = cnx.cursor()
-    query = ("SELECT summonerId from players")
+def extract_matches(p_session, nb_match_needed):
     summoners_stack = list()
-    cursor.execute(query)
-    for account_id in cursor:
-        summoners_stack.append(account_id[0])
+    for player_obj in p_session.query(Players):
+        summoners_stack.append(player_obj.accountId)
     summoner_destack = list()
     match_stack = list()
+    # todo use set and avoid infinite loop
     while len(match_stack) < nb_match_needed and len(summoners_stack) > 0:
-        #get random summoner id in stack
+        # get random summoner id in stack
         sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
-        #needed to escape potential infinite loop
+        # needed to escape potential infinite loop
         summoner_destack.append(sum_id)
         account_id = api_call.get_acount_id(sum_id)
         matches_list = api_call.get_matchlist(account_id['accountId'])
@@ -239,12 +147,13 @@ def extract_matches(cnx, nb_match_needed):
                 participants = get_participant_champ(match_data)
                 if len(participants) == 1:
                     continue
-                # orm
-                add_match = ("INSERT IGNORE INTO matches (gameId, platformId, season, timestamp) VALUES (%s, %s, %s, %s)")
+                # get the column names of the table
+                fields_match = (str(col).split(".")[-1] for col in Matches.__table__.columns)
                 data_match = (int(matchid), match_data['platformId'], int(match_data['seasonId']), int(match_data['gameDuration']))
-                cursor.execute(add_match, data_match)
-    cnx.commit()
-    cursor.close()
+                # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
+                new_match_entry = Matches(**dict(zip(fields_match, data_match)))
+                p_session.add(new_match_entry)
+    p_session.commit()
 
 
 def extract_timelines(cnx):
@@ -334,36 +243,29 @@ def extract_timelines(cnx):
     cursor.close()
 
 
-# todo change this with sqlalchemy cleaing tools
-def clean_database(cnx):
+def clean_database(p_engine, p_force=False):
     """
-    Fully Truncate all the tables of the database.
+    Drop all tables of the database.
 
-    Ask for confirmation before truncate.
-    :param cnx: Connexion object
-    :return: None
+    :param p_engine: The current used engine.
+    :type p_engine: sqlalchemy.engine.Engine
+    :param p_force: Don't ask for confirmation. (default: False)
+    :type p_force: Boolean
+    :return:
     """
-    confirmation = input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
-    if confirmation != 'y':
-        db_log.info("DB won't be empty.")
-        return
-
-    cursor = cnx.cursor(buffered=True)
-    query = ("SHOW TABLES;")
-    cursor.execute(query)
-    tables = list(cursor)
-
-    for table in tables:
-        table_name = table[0]
-        cursor.execute("TRUNCATE TABLE %s" % table_name)
-        db_log.info("%s table truncated." % table_name)
-
-    cursor.close()
+    if not p_force:
+        confirmation = input("Destiny is about to drop the whole database. Do you agree? y/N").strip()
+        if confirmation != 'y':
+            db_log.info("DB won't be empty.")
+            return
+    db_log.debug("Start droping tables with engine %s." % p_engine)
+    Base.metadata.drop_all(p_engine)
+    db_log.info("Tables droped")
 
 
 if __name__ == '__main__':
-    a = Players(summonerId=1, accountId=1, tier="GOLD")
-    print(a)
+    global CHAMPIONS
+    CHAMPIONS = get_champion_list()
 
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
@@ -372,15 +274,26 @@ if __name__ == '__main__':
     db_log.addHandler(stream_handler)
     db_log.setLevel(logging.DEBUG)
 
+    connection_string = ('%s%s://%s:%s@%s:%s/%s' %
+                           (settings.DB_DIALECT,
+                            "+" + settings.DB_DRIVER if settings.DB_DRIVER is not "" else settings.DB_DRIVER,
+                            settings.DB_USER,
+                            settings.DB_PASSWORD,
+                            settings.DB_HOST,
+                            settings.DB_PORT,
+                            settings.DB_NAME))
+
+    db_log.debug("Connection string: %s" % connection_string)
+    engine = create_engine(connection_string)
+    Session = sessionmaker(bind=engine)()
+
     CONNEXION = get_connection_db(user=settings.DB_USER, password=settings.DB_PASSWORD,
                             host=settings.DB_HOST, database=settings.DB_NAME,
                             port=settings.DB_PORT)
-    clean_database(CONNEXION)
 
-    global CHAMPIONS
-    CHAMPIONS = get_champion_list()
-    create_table(CONNEXION)
-    extract_data(CONNEXION)
+    clean_database(engine, p_force=True)
+    create_tables(engine)
 
-    clean_database(CONNEXION)
+    extract_data(Session)
+
     close_cnx(CONNEXION)

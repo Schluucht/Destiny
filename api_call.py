@@ -1,6 +1,6 @@
 import time
 import logging
-import os
+import traceback
 import requests
 
 import settings
@@ -50,6 +50,7 @@ def do_query(url):
         if r.status_code != 200:
             status_string += ". url: %s -> Exiting." % url
             api_log.error(status_string)
+            # todo change this exit statement to be more permissive with 404 errors for example
             exit()
     api_log.debug("Request status %s in api_call.do_query -> Succeed." % r.status_code)
     return r.json()
