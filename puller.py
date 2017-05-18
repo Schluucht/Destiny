@@ -333,6 +333,7 @@ def extract_timelines(cnx):
     cnx.commit()
     cursor.close()
 
+
 # todo change this with sqlalchemy cleaing tools
 def clean_database(cnx):
     """
