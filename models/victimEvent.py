@@ -8,9 +8,9 @@ class VictimEvent(Base):
     __tablename__ = 'victimEvent'
 
     gameId = Column(BigInteger, nullable=False, primary_key=True)
-    timestamp = Column(BigInteger, primary_key=True)
     killer = Column(CHAR(50), primary_key=True)
     victim = Column(CHAR(50), primary_key=True)
+    timestamp = Column(BigInteger, primary_key=True)
     x = Column(Integer)
     y = Column(Integer)
 

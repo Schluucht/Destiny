@@ -5,7 +5,7 @@ Base = declarative_base()
 
 def rep_model(self):
     """
-    Dynamic string generation for an object attributes.
+    Dynamic fancy string generation for an object attributes.
 
     :param self: any object
     :return: the string representation of the attributes of this object

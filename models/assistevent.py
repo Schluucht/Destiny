@@ -8,9 +8,9 @@ class AssistEvent(Base):
     __tablename__ = 'assistEvent'
 
     gameId = Column(BigInteger, nullable=False, primary_key=True)
-    timestamp = Column(BigInteger, primary_key=True)
     assist = Column(CHAR(50), primary_key=True)
     victim = Column(CHAR(50), primary_key=True)
+    timestamp = Column(BigInteger, primary_key=True)
     x = Column(Integer)
     y = Column(Integer)
 
