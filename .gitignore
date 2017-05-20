@@ -50,3 +50,6 @@ Temporary Items
 *.pyc
 
 config.yml
+
+*.dia
+*.png
