@@ -1,6 +1,5 @@
 import time
 import logging
-import traceback
 import requests
 
 import settings
