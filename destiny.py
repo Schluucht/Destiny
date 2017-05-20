@@ -16,7 +16,9 @@ def extract_data(p_session):
     matches = extract.extract_matches(p_session, settings.NB_MATCHES_NEEDED)
     db_log.info("Loading match entries into the local database.")
     load.load_data(p_session, matches)
+    db_log.info("Extracting timeline entries from riot-games API.")
     timelines = extract.extract_timelines(p_session)
+    db_log.info("Loading timeline entries into the local database.")
     load.load_timelines(p_session, timelines)
 
 if __name__ == '__main__':

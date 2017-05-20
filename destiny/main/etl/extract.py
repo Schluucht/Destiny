@@ -174,6 +174,7 @@ def extract_timelines(p_session):
                         killer_id = events['killerId']
                         victim_id = events['victimId']
                         # todo something with this list of assists
+                        # we can concatenate the IDs in order to create an ID for the table assist
                         l_assist_ids = events['assistingParticipantIds']
                         kill_data = (
                             matchid,
