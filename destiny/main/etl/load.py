@@ -1,4 +1,11 @@
 def load_summoners(cnx, data):
+    """
+    Insert summoners informations into the corresponding database table.
+
+    :param cnx: Connexion object
+    :param data: Dictionnary
+    :return: None
+    """
     cursor = cnx.cursor()
     add_player = ("INSERT IGNORE INTO players (summoner_id, account_id, tier, last_refresh) VALUES (%s, %s, %s, %s)")
     for summoner in data:
@@ -10,7 +17,15 @@ def load_summoners(cnx, data):
         cnx.commit()
     cursor.close()
 
+
 def load_matches(cnx, data):
+    """
+    Insert matches informations into the corresponding database table.
+
+    :param cnx: Connexion object
+    :param data: Dictionnary
+    :return: None
+    """
     cursor = cnx.cursor()
     add_match = ("INSERT IGNORE INTO matches (game_id, platform_id, season, timestamp) VALUES (%s, %s, %s, %s)")
     for match in data:
@@ -22,7 +37,15 @@ def load_matches(cnx, data):
         cnx.commit()
     cursor.close()
 
+
 def load_timelines(cnx, data):
+    """
+    Insert timelines informations into the corresponding database table.
+
+    :param cnx: Connexion object
+    :param data: Dictionnary
+    :return: None
+    """
     cursor = cnx.cursor()
     for timelines in data:
         game_id = timelines['game_id']
