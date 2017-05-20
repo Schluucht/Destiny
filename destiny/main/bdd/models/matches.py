@@ -1,7 +1,7 @@
 from sqlalchemy import Column
 from sqlalchemy.sql.sqltypes import BigInteger, CHAR, Integer
 
-from models.base import Base, rep_model
+from destiny.main.bdd.base import Base, rep_model
 
 
 class Matches(Base):

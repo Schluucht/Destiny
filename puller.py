@@ -1,13 +1,14 @@
+import logging
 from datetime import datetime
 from random import randint
-import logging
+
+from destiny.main.bdd.models import Players, Matches, Stats, ItemEvent, KillEvent, VictimEvent, AssistEvent
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm.session import sessionmaker
 
 import api_call
 import settings
-from models import Players, Matches, Stats, ItemEvent, KillEvent, VictimEvent, AssistEvent
-from models.base import Base
+from destiny.main.bdd.base import Base
 
 
 def get_champion_list():
