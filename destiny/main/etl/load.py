@@ -1,3 +1,5 @@
+import utils
+
 def load_summoners(cnx, data):
     """
     Insert summoners informations into the corresponding database table.

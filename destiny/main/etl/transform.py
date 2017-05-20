@@ -1,4 +1,7 @@
-#get all participants and tag their role
+from utils import deprecated
+import destiny.main.api_call as api_call
+
+@deprecated
 def get_participant_champ(match):
     """
     extract from match data champion ID associate to participant ID.
@@ -16,6 +19,7 @@ def get_participant_champ(match):
     return participants
 
 
+@deprecated
 def get_champion_list():
     """
     extract champions list ID.
@@ -29,7 +33,7 @@ def get_champion_list():
     return champions
 
 
-
+@deprecated
 def role_checker(roles):
     """
     Check if all roles are present in roles.
@@ -44,6 +48,7 @@ def role_checker(roles):
        return True
 
 
+@deprecated
 def construct_role_list(data,side):
     """
     Create set of all roles detected in data but only for one side (blue or red).
