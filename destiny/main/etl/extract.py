@@ -1,7 +1,8 @@
 from random import randint
 from datetime import datetime
 
-import api_call
+import destiny.settings as settings
+import destiny.main.api_call as api_call
 
 def extract_summoners(cnx, nb_sum_needed):
     """
@@ -89,7 +90,7 @@ def extract_matches(cnx, nb_match_needed):
     for match in match_stack:
         match_data = api_call.get_match(match)
         if 'queueId' in match_data:
-            if match_data['queueId'] == 420:
+            if match_data['queueId'] == settings.TYPE_OF_GAME_NEEDED:
                 matchid = int(match_data['gameId'])
                 data_match.append({
                     'match_id': int(matchid), 
@@ -110,7 +111,7 @@ def extract_timelines(cnx):
     :return: matches_timeline (list)
     """
     cursor = cnx.cursor()
-    query = ("SELECT gameId from matches")
+    query = ("SELECT game_id from matches")
     #get all match ids
     matchids = list()
     matches_timeline = list()
@@ -137,7 +138,7 @@ def extract_timelines(cnx):
             if nb_frame_viewed < len(timeline['frames']):
                 for key,value in frame['participantFrames'].items():
                     stats_frame.append({
-                                  'participant': int(value['participantId']),
+                                  'participant_id': int(value['participantId']),
                                   'level': int(value['level']),
                                   'current_gold': int(value['currentGold']),
                                   'minions_killed': int(value['minionsKilled']),
@@ -162,8 +163,8 @@ def extract_timelines(cnx):
                         'victim': victim,
                         'assist': events['assistingParticipantIds'],
                         'timestamp' : events['timestamp'],
-                        'postion_x': events['position']['x'],
-                        'postion_y': events['position']['y']
+                        'position_x': events['position']['x'],
+                        'position_y': events['position']['y']
                         })
             data_frame['timestamp'] = timestamp
             data_frame['stats'] = stats_frame

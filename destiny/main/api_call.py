@@ -2,8 +2,7 @@ import time
 import logging
 import os
 import requests
-
-import settings
+import destiny.settings as settings
 
 stream_handler = logging.StreamHandler()
 api_log = logging.getLogger("api_call_logger")

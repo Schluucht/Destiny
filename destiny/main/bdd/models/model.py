@@ -1,6 +1,6 @@
 import mysql.connector
 import logging
-import settings
+import destiny.settings as settings
 
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
@@ -29,33 +29,33 @@ def create_table(cnx):
 
     tables['match'] = (
         "CREATE TABLE IF NOT EXISTS matches("
-        "  gameId bigint NOT NULL,"
-        "  platformId char(9),"
+        "  game_id bigint NOT NULL,"
+        "  platform_id char(9),"
         "  season int,"
         "  timestamp bigint,"
-        "  PRIMARY KEY (gameId)"
+        "  PRIMARY KEY (game_id)"
         ") ENGINE=InnoDB")
 
     tables['participant'] = (
         "CREATE TABLE IF NOT EXISTS participant("
-        "  gameId bigint NOT NULL,"
-        "  participantId int,"
+        "  game_id bigint NOT NULL,"
+        "  participant_id int,"
         "  role char(20),"
         "  championId char(50),"
-        "  PRIMARY KEY (gameId, participantId)"
+        "  PRIMARY KEY (game_id, participant_id)"
         ") ENGINE=InnoDB")
 
     tables['stats'] = (
         "CREATE TABLE IF NOT EXISTS stats("
         "  idstats bigint NOT NULL AUTO_INCREMENT,"
-        "  gameId bigint NOT NULL,"
+        "  game_id bigint NOT NULL,"
         "  timestamp bigint NOT NULL,"
-        "  champion char(50),"
+        "  participant_id char(50),"
         "  level int,"
-        "  currentGold int,"
-        "  minionsKilled int,"
+        "  current_gold int,"
+        "  minions_killed int,"
         "  xp int,"
-        "  jungleMinionsKilled int,"
+        "  jungle_minions_killed int,"
         "  x int,"
         "  y int,"
         "  PRIMARY KEY (idstats)"
@@ -63,44 +63,44 @@ def create_table(cnx):
 
     tables['itemEvent'] = (
         "CREATE TABLE IF NOT EXISTS itemEvent("
-        "  gameId bigint NOT NULL,"
-        "  itemId int,"
+        "  game_id bigint NOT NULL,"
+        "  item_id int,"
         "  timestamp int,"
         "  participant char(50),"
-        "  PRIMARY KEY (gameId,participant,timestamp)"
+        "  PRIMARY KEY (game_id,participant,timestamp)"
         ") ENGINE=InnoDB")
 
     tables['killEvent'] = (
         "CREATE TABLE IF NOT EXISTS killEvent("
-        "  gameId bigint NOT NULL,"
+        "  game_id bigint NOT NULL,"
         "  killer char(50),"
         "  victim char(50),"
         "  timestamp int,"
         "  x int,"
         "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,killer,victim)"
+        "  PRIMARY KEY (game_id,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
     tables['assistEvent'] = (
         "CREATE TABLE IF NOT EXISTS assistEvent("
-        "  gameId bigint NOT NULL,"
+        "  game_id bigint NOT NULL,"
         "  assist char(50),"
         "  victim char(50),"
         "  timestamp int,"
         "  x int,"
         "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,assist,victim)"
+        "  PRIMARY KEY (game_id,timestamp,assist,victim)"
         ") ENGINE=InnoDB")
 
     tables['victimEvent'] = (
         "CREATE TABLE IF NOT EXISTS victimEvent("
-        "  gameId bigint NOT NULL,"
+        "  game_id bigint NOT NULL,"
         "  killer char(50),"
         "  victim char(50),"
         "  timestamp int,"
         "  x int,"
         "  y int,"
-        "  PRIMARY KEY (gameId,timestamp,killer,victim)"
+        "  PRIMARY KEY (game_id,timestamp,killer,victim)"
         ") ENGINE=InnoDB")
 
     for name, ddl in tables.items():
@@ -115,4 +115,3 @@ def create_table(cnx):
             sys.exit(1)
     cursor.close()
     cnx.commit()
-

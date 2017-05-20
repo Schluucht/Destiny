@@ -1,6 +1,6 @@
 import mysql.connector
 import logging
-import settings
+import destiny.settings as settings
 
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)

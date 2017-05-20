@@ -7,3 +7,8 @@ mysql_database:
   port: 3306
   user: "user"
   password: "password"
+
+data_to_extract:
+	nb_matches_needed: 1
+	nb_players_needed: 1
+	type_of_game_needed: 420  --Defined what kind of matching queue you want to extract. More information : https://developer.riotgames.com/game-constants.html

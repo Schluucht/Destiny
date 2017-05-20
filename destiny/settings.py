@@ -14,7 +14,7 @@ settings_log.addHandler(stream_handler)
 settings_log.setLevel(logging.DEBUG)
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(ROOT_DIR, "config.yml")) as f:
+with open(os.path.join(ROOT_DIR, "..\\config.yml")) as f:
     file_dict = load(f)
     API_KEY = file_dict['api-key'].strip()
     settings_log.debug("API KEY: %s" % API_KEY)
@@ -23,6 +23,9 @@ with open(os.path.join(ROOT_DIR, "config.yml")) as f:
     DB_NAME = file_dict['mysql_database']['name'].strip()
     DB_USER = file_dict['mysql_database']['user'].strip()
     DB_PASSWORD = file_dict['mysql_database']['password'].strip()
+    NB_PLAYERS_NEEDED = int(file_dict['data_to_extract']['nb_players_needed'])
+    NB_MATCHES_NEEDED = int(file_dict['data_to_extract']['nb_matches_needed'])
+    TYPE_OF_GAME_NEEDED = int(file_dict['data_to_extract']['type_of_game_needed'])
 
 REGION = 'https://euw1.api.riotgames.com/'
 
