@@ -1,5 +1,6 @@
-from utils import deprecated
 import destiny.main.api_call as api_call
+from destiny.utils import deprecated
+
 
 @deprecated
 def get_participant_champ(match):

@@ -1,10 +1,9 @@
 import time
 import logging
-import os
 import requests
 import destiny.settings as settings
+from destiny.utils import stream_handler
 
-stream_handler = logging.StreamHandler()
 api_log = logging.getLogger("api_call_logger")
 api_log.addHandler(stream_handler)
 api_log.setLevel(logging.DEBUG)
@@ -49,6 +48,7 @@ def do_query(url):
         if r.status_code != 200:
             status_string += ". url: %s -> Exiting." % url
             api_log.error(status_string)
+            # todo change this exit statement to be more permissive with 404 errors for example
             exit()
     api_log.debug("Request status %s in api_call.do_query -> Succeed." % r.status_code)
     return r.json()
