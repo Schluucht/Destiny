@@ -13,39 +13,40 @@ Destiny is an ETL allowing to build local database from [League of Legends](http
 Rename `config.example.yml` to `config.yml` then change the relevant fields.
 
 
-## Architecture
+## Project Architecture
 
+```
 Destiny/
 | -- destiny/
 |    |
-| 	 | -- main/
-|	 |    | -- bdd/
-|	 |    |    |-- __init__.py
-|	 |    |    |-- connexion.py
-|	 |    |    |-- models/
-|	 |    |    |   | -- __init__.py
-|	 |    |    |   | -- assistevent.py
-|	 |    |    |   | -- itemevent.py
-|	 |    |    |   | -- killevent.py
-|	 |    |    |   | -- matches.py
-|	 |    |    |   | -- participant.py
-|	 |    |    |   | -- player.py
-|	 |    |    |   | -- stats
-|	 |    |
-|	 |    | -- __init__.py
-|	 |    | -- __api_call.py
-|	 |    | -- etl/
-|	 |    |    |-- __init__.py
-|	 |    |    |-- extract.py
-|	 |    |    |-- load.py
-|	 |    |    |-- transform.py
+|    | -- main/
+|    |    | -- bdd/
+|    |    |    |-- __init__.py
+|    |    |    |-- connexion.py
+|    |    |    |-- models/
+|    |    |    |   | -- __init__.py
+|    |    |    |   | -- assistevent.py
+|    |    |    |   | -- itemevent.py
+|    |    |    |   | -- killevent.py
+|    |    |    |   | -- matches.py
+|    |    |    |   | -- participant.py
+|    |    |    |   | -- player.py
+|    |    |    |   | -- stats
+|    |    |
+|    |    | -- __init__.py
+|    |    | -- __api_call.py
+|    |    | -- etl/
+|    |    |    |-- __init__.py
+|    |    |    |-- extract.py
+|    |    |    |-- load.py
+|    |    |    |-- transform.py
 |    |
-|	 | -- test/
-|	 |    | -- test_etl
-|	 |
-|	 | -- __init__.py
-|	 | -- settings.py
-|	 | -- utils.py
+|    | -- test/
+|    |    | -- test_etl
+|    |
+|    | -- __init__.py
+|    | -- settings.py
+|    | -- utils.py
 |
 | -- .gitattributes
 | -- .gitignore
@@ -55,6 +56,7 @@ Destiny/
 | -- LICENSE
 | -- README.md
 | -- requirements.txt
+```
 
 ## License
 
