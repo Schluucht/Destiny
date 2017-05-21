@@ -14,3 +14,7 @@ db_log.setLevel(logging.DEBUG)
 api_log = logging.getLogger("api_call_logger")
 api_log.addHandler(stream_handler)
 api_log.setLevel(logging.DEBUG)
+
+ext_log = logging.getLogger("extract_logger")
+ext_log.addHandler(stream_handler)
+ext_log.setLevel(logging.DEBUG)

@@ -1,3 +1,7 @@
+from sqlalchemy.exc import IntegrityError
+from destiny.main.destinylogger import db_log
+
+
 def load_data(p_session, p_data):
     """
     Insert the list of models instances in the current session then commit.
@@ -6,8 +10,12 @@ def load_data(p_session, p_data):
     :param p_data: List of models instances.
     :return: None
     """
-    p_session.add_all(p_data)
-    p_session.commit()
+    try:
+        p_session.add_all(p_data)
+        p_session.commit()
+    except IntegrityError as IE:
+        db_log.error(IE)
+        raise IE
 
 
 def load_timelines(p_session, data):
