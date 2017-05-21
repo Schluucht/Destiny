@@ -1,15 +1,11 @@
 import os
-import logging
-from destiny.utils import stream_handler
+
+from destiny.main.destinylogger import settings_log
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper, load
 except ImportError:
     from yaml import Loader, Dumper, load
-
-
-settings_log = logging.getLogger("settings_logger")
-settings_log.addHandler(stream_handler)
-settings_log.setLevel(logging.DEBUG)
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(ROOT_DIR, "../config.yml")) as f:

@@ -11,7 +11,7 @@ class ItemEvent(Base):
     gameId = Column(BigInteger, nullable=False, primary_key=True)
     itemId = Column(Integer, primary_key=True)
     timestamp = Column(BigInteger, primary_key=True)
-    participantId = Column(Integer)
+    participantId = Column(Integer, primary_key=True)
 
     def __repr__(self):
         return rep_model(self)

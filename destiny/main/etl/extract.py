@@ -8,6 +8,8 @@ from destiny.main.bdd.models.itemevent import ItemEvent
 from destiny.main.bdd.models.killevent import KillEvent
 from destiny.main.bdd.models.matches import Matches
 from destiny.main.bdd.models.stats import Stats
+from destiny.main.destinyexception import DestinyException
+from destiny.main.destinylogger import ext_log
 
 
 def extract_summoners(p_session, nb_sum_needed):
@@ -19,24 +21,25 @@ def extract_summoners(p_session, nb_sum_needed):
     :return: data_summoner (list)
     """
     # initialize variable
-    summoner_destack = list()
-    summoners_stack = list()
+    summoners_stack = set()
     data_summoner = list()
+    # initialize summoner_stack with summoner id known
+    summoners_stack.add(21965576)  # need to be configurable
+    # summoners_stack.add(1)  # need to be configurable
 
-    # get the summoner Id and flatten the resulting list into a tuple of size `number of summoner ids`
-    summoners_in_db = sum(p_session.query(Players.summonerId), ())
-
-    if len(summoners_in_db) == 0:
-        # initialize summoner_stack with summoner id known
-        summoners_stack.append(21965576)  # need to be configurable
-    else:
-        summoners_stack.append(summoners_in_db[randint(0, len(summoners_in_db))-1])
+    if len(summoners_stack) == 0:
+        one_summoner = p_session.query(Players.summonerId).one()
+        summoners_stack.add(one_summoner)
 
     while len(summoners_stack) < nb_sum_needed:
-        # get random summoner id in stack
-        sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
+        try:
+            # get random summoner id in stack
+            sum_id = summoners_stack.pop()
+        except KeyError:
+            s_exce = "No summoner retrieved"
+            ext_log.error(s_exce)
+            raise DestinyException(s_exce)
         # needed to escape potential infinite loop
-        summoner_destack.append(sum_id)
         leagues = api_call.get_league_by_summoner(sum_id)
 
         # for each league we extract all summoner id
@@ -44,7 +47,7 @@ def extract_summoners(p_session, nb_sum_needed):
             tier = league['tier']
             for entrie in league['entries']:
                 if entrie['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
-                    summoners_stack.append(entrie['playerOrTeamId'])
+                    summoners_stack.add(entrie['playerOrTeamId'])
                     summoner_id = int(entrie['playerOrTeamId'])
                     last_refresh = datetime.now()
                     # date format to mysql
@@ -66,7 +69,6 @@ def extract_matches(p_session, nb_match_needed):
     :param nb_match_needed: int
     :return: data_match (list)
     """
-    summoner_destack = list()
     match_stack = list()
     data_match = list()
 
@@ -77,7 +79,6 @@ def extract_matches(p_session, nb_match_needed):
         # get random summoner id in stack
         sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
         # needed to escape potential infinite loop
-        summoner_destack.append(sum_id)
         account_id = api_call.get_acount_id(sum_id)
         matches_list = api_call.get_matchlist(account_id['accountId'])
         if len(matches_list) > 0:

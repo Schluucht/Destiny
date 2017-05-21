@@ -1,9 +1,6 @@
 import warnings
 import logging
 
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-
 
 def deprecated(func):
     """
