@@ -89,6 +89,16 @@ def get_challenger():
     return do_query(url)
 
 
+def get_challenger():
+    """
+    API documentation: https://developer.riotgames.com/api-methods/#league-v3/GET_getChallengerLeague
+
+    :return:
+    """
+    url = settings.REGION + 'lol/league/v3/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + settings.API_KEY
+    return do_query(url)
+
+
 def get_league_by_summoner(id_summoner):
     """
     API documentation: https://developer.riotgames.com/api-methods/#league-v3/GET_getAllLeaguesForSummoner
