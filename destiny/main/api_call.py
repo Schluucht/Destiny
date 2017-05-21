@@ -2,11 +2,7 @@ import time
 import logging
 import requests
 import destiny.settings as settings
-from destiny.utils import stream_handler
-
-api_log = logging.getLogger("api_call_logger")
-api_log.addHandler(stream_handler)
-api_log.setLevel(logging.DEBUG)
+from destiny.main.destinylogger import api_log
 
 d_error_code_msg_s = {
     400: "Bad request",
