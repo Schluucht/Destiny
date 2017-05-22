@@ -75,7 +75,6 @@ def do_query(url):
             api_log.debug(status_string)
             raise DestinyApiCallException(r.status_code, d_error_code_msg_s[r.status_code])
 
-    api_log.debug(status_string)
     return r.json()
 
 
