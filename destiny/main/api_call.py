@@ -58,22 +58,27 @@ def do_query(url):
     """
     r = requests.get(url)
     # Code is not 200 if something went wrong
-    status_string = "Request status %s in api_call.do_query %s" % (
+    init_status_string = "Request status %s in api_call.do_query %s" % (
         r.status_code, d_error_code_msg_s[r.status_code])
-    status_string += ". url: %s." % url
+    init_status_string += ". url: %s." % url
     while r.status_code != 200:
-
         while r.status_code == 429:
             time_sleep = int(r.headers["Retry-After"]) + 2
-            status_string += " -> Retrying in %s seconds." % time_sleep
+            status_string = init_status_string + " -> Retrying in %s seconds." % time_sleep
             api_log.debug(status_string)
             time.sleep(time_sleep)
             # continue loop with new request
             r = requests.get(url)
+            init_status_string = "Request status %s in api_call.do_query %s" % (
+                r.status_code, d_error_code_msg_s[r.status_code])
+            init_status_string += ". url: %s." % url
         # if status_code is still not 200 after the 429 loop
         if r.status_code != 200:
+            status_string = init_status_string
             api_log.debug(status_string)
             raise DestinyApiCallException(r.status_code, d_error_code_msg_s[r.status_code])
+
+    api_log.debug(init_status_string)
 
     return r.json()
 
