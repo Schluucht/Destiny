@@ -1,99 +1,125 @@
-import time
-import requests
 import destiny.settings as settings
+from destiny.main.api_call import do_query, get_challenger, get_league_by_summoner, get_acount_id, get_matchlist, \
+    get_match, get_timeline, get_champion
+import pytest
+
 from destiny.main.destinyexception import DestinyApiCallException
-from destiny.main.destinylogger import api_log
+
+
+@pytest.fixture
+def id_summoner():
+    return 56947948
+
+
+@pytest.fixture
+def id_account():
+    return 209493252
+
+
+@pytest.fixture
+def id_match():
+    return 3181575441
 
 
 def test_do_query():
     """
-    Makes the api call and eventually handle errors.
+    Tests `api_call.do_query` function.
 
-    Error handling:
-        - 429: Too many requests -> wait then re-try
-        - others: -> exit
-
-    :param url: the pre-formatted url for the api
-    :return: response.json (dict)
+    Use the function against prepared urls and check that the returned results are not empty.
     """
     urls = {
         "timelines":
-            "https://euw1.api.riotgames.com//lol/match/v3/timelines/by-match/3181575441?api_key=RGAPI-6d8d1f8b-2f06-40f0-8177-c6ff597533d7",
+            settings.REGION + "/lol/match/v3/timelines/by-match/3181575441?api_key=" + settings.API_KEY,
         "matches":
-            "https://euw1.api.riotgames.com//lol/match/v3/matches/3181575441?api_key=RGAPI-6d8d1f8b-2f06-40f0-8177-c6ff597533d7"
+            settings.REGION + "/lol/match/v3/matches/3181575441?api_key=" + settings.API_KEY,
+        "summoners":
+            settings.REGION + "/lol/summoner/v3/summoners/56947948?api_key=" + settings.API_KEY,
+        "matchlist":
+            settings.REGION + "/lol/match/v3/matchlists/by-account/209493252/recent?api_key=" + settings.API_KEY
     }
+    for _type, url in urls.items():
+        assert len(do_query(url)) > 0
+
+    with pytest.raises(DestinyApiCallException) as DE401:
+        url_401 = "https://euw1.api.riotgames.com//lol/unauthorized/"
+        do_query(url_401)
+    assert DE401.value.err_code == 401
+
+    with pytest.raises(DestinyApiCallException) as DE404:
+        url_404 = "https://euw1.api.riotgames.com//lol/match/v3/matches/31815751235441?api_key=" + settings.API_KEY
+        do_query(url_404)
+    assert DE404.value.err_code == 404
+
+    with pytest.raises(DestinyApiCallException) as DE403:
+        url_403 = "https://euw1.api.riotgames.com//lol/match/v3/matches/31815751235441?api_key=invalid"
+        do_query(url_403)
+    assert DE403.value.err_code == 403
 
 
-def get_challenger():
+def test_get_challenger():
     """
-    API documentation: https://developer.riotgames.com/api-methods/#league-v3/GET_getChallengerLeague
+    Tests `api_call.get_challenger()` function.
 
+    Tests if the returned dict contains something.
     :return:
     """
-    url = settings.REGION + 'lol/league/v3/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + settings.API_KEY
-    return do_query(url)
+    assert len(get_challenger()) > 0
 
 
-def get_league_by_summoner(id_summoner):
+def test_get_league_by_summoner(id_summoner):
     """
     API documentation: https://developer.riotgames.com/api-methods/#league-v3/GET_getAllLeaguesForSummoner
 
     :param id_summoner:
     :return:
     """
-    url = settings.REGION + '/lol/league/v3/leagues/by-summoner/'+str(id_summoner)+'?api_key='+settings.API_KEY
-    return do_query(url)
+    assert len(get_league_by_summoner(id_summoner)) > 0
 
 
-def get_acount_id(id_summoner):
+def test_get_acount_id(id_summoner):
     """
     API documentation: https://developer.riotgames.com/api-methods/#summoner-v3/GET_getBySummonerId
 
     :param id_summoner:
     :return:
     """
-    url = settings.REGION + '/lol/summoner/v3/summoners/'+str(id_summoner)+'?api_key='+settings.API_KEY
-    return do_query(url)
+    assert len(get_acount_id(id_summoner)) > 0
 
 
-def get_matchlist(id_account):
+def test_get_matchlist(id_account):
     """
     API documentation: https://developer.riotgames.com/api-methods/#match-v3/GET_getRecentMatchlist
 
     :param id_account:
     :return:
     """
-    url = settings.REGION + '/lol/match/v3/matchlists/by-account/'+str(id_account)+'/recent?api_key='+settings.API_KEY
-    return do_query(url)
+    assert len(get_matchlist(id_account)) > 0
 
 
-def get_match(id_match):
+def test_get_match(id_match):
     """
     API documentation: https://developer.riotgames.com/api-methods/#match-v3/GET_getMatch
 
     :param id_match:
     :return:
     """
-    url = settings.REGION + '/lol/match/v3/matches/'+str(id_match)+'?api_key='+settings.API_KEY
-    return do_query(url)
+    assert len(get_match(id_match)) > 0
 
 
-def get_timeline(id_match):
+def test_get_timeline(id_match):
     """
     API documentation: https://developer.riotgames.com/api-methods/#match-v3/GET_getMatchTimeline
 
     :param id_match:
     :return:
     """
-    url = settings.REGION + '/lol/match/v3/timelines/by-match/'+str(id_match)+'?api_key='+settings.API_KEY
-    return do_query(url)
+    assert len(get_timeline(id_match)) > 0
 
 
-def get_champion():
+def test_get_champion():
     """
     API documentation: https://developer.riotgames.com/api-methods/#static-data-v3/GET_getChampionList
 
     :return:
     """
-    url = settings.REGION + '/lol/static-data/v3/champions?api_key=' + settings.API_KEY
-    return do_query(url)
+    assert len(get_champion()) > 0

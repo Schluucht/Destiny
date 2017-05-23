@@ -12,6 +12,7 @@ from destiny.main.destinyexception import DestinyException
 from destiny.main.destinylogger import ext_log
 
 
+# testing: assert it returns something of the good type with the good size
 def extract_summoners(p_session, nb_sum_needed):
     """
     Extract a list of `Players` objects from riot games API.
@@ -61,6 +62,7 @@ def extract_summoners(p_session, nb_sum_needed):
     return data_summoner
 
 
+# testing: assert it returns something of the good type with the good size
 def extract_matches(p_session, nb_match_needed):
     """
     Extract a list of `Matches` objects from riot game API.
@@ -105,7 +107,8 @@ def extract_matches(p_session, nb_match_needed):
 
     return data_match
 
-    
+
+# testing: assert it returns something of the good type
 def extract_timelines(p_session):
     """
     Extract a list of matches timelines which contain:

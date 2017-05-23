@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from destiny.main.destinylogger import db_log
 
 
+# testing check it was added to the database be carefull with the fields
 def load_data(p_session, p_data):
     """
     Insert the list of models instances in the current session then commit.
@@ -18,6 +19,7 @@ def load_data(p_session, p_data):
         raise IE
 
 
+# testing
 def load_timelines(p_session, data):
     """
     Insert timelines informations into the corresponding database table.
