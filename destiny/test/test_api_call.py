@@ -4,47 +4,8 @@ import destiny.settings as settings
 from destiny.main.destinyexception import DestinyApiCallException
 from destiny.main.destinylogger import api_log
 
-d_error_code_msg_s = {
-    200: "Successful",
-    400: "Bad request",
-    401: "Unauthorized",
-    403: "Blacklisted or invalid key",
-    404: "Game data not found",
-    429: "Too many requests",
-    500: "Internal server error",
-    503: "Service unavailable",
-    504: 'Gateway timeout',
-}
 
-
-class ApiCallContextManager:
-    def __init__(self, f):
-        """
-        If there are no decorator arguments, the function
-        to be decorated is passed to the constructor.
-        """
-        self.f = f
-
-    def __call__(self, url):
-        """
-        The __call__ method is not called until the
-        decorated function is called.
-        """
-        try:
-            return self.f(url)
-        except DestinyApiCallException as api_e:
-            if 500 <= api_e.err_code < 600:
-                time_sleep = 180
-                api_log.warning(str(api_e) + "-> waiting {}s.".format(time_sleep))
-                time.sleep(180)
-                return self.f(url)
-            else:
-                api_log.error(str(api_e))
-                raise api_e
-
-
-@ApiCallContextManager
-def do_query(url):
+def test_do_query():
     """
     Makes the api call and eventually handle errors.
 
@@ -55,31 +16,12 @@ def do_query(url):
     :param url: the pre-formatted url for the api
     :return: response.json (dict)
     """
-    r = requests.get(url)
-    # Code is not 200 if something went wrong
-    init_status_string = "Request status %s in api_call.do_query %s" % (
-        r.status_code, d_error_code_msg_s[r.status_code])
-    init_status_string += ". url: %s." % url
-    while r.status_code != 200:
-        while r.status_code == 429:
-            time_sleep = int(r.headers["Retry-After"]) + 2
-            status_string = init_status_string + " -> Retrying in %s seconds." % time_sleep
-            api_log.debug(status_string)
-            time.sleep(time_sleep)
-            # continue loop with new request
-            r = requests.get(url)
-            init_status_string = "Request status %s in api_call.do_query %s" % (
-                r.status_code, d_error_code_msg_s[r.status_code])
-            init_status_string += ". url: %s." % url
-        # if status_code is still not 200 after the 429 loop
-        if r.status_code != 200:
-            status_string = init_status_string
-            api_log.debug(status_string)
-            raise DestinyApiCallException(r.status_code, d_error_code_msg_s[r.status_code])
-
-    api_log.debug(init_status_string)
-
-    return r.json()
+    urls = {
+        "timelines":
+            "https://euw1.api.riotgames.com//lol/match/v3/timelines/by-match/3181575441?api_key=RGAPI-6d8d1f8b-2f06-40f0-8177-c6ff597533d7",
+        "matches":
+            "https://euw1.api.riotgames.com//lol/match/v3/matches/3181575441?api_key=RGAPI-6d8d1f8b-2f06-40f0-8177-c6ff597533d7"
+    }
 
 
 def get_challenger():
