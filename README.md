@@ -4,7 +4,7 @@ Destiny is an ETL allowing to build local database from [League of Legends](http
 
 ## Requierements
 
-- Python 2.7
+- Python 3.4
 - Running mysql server available with a ready to use database (default name is 'lol')
 - Install modules from `requierements.txt`
 
