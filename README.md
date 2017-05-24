@@ -59,7 +59,7 @@ Destiny/
 ```
 ## Database schema
 
-![database schema of Destiny](./doc/schema_database_destiny.png)
+![database schema of Destiny](doc/schema_database_destiny.png)
 
 ## License
 
