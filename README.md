@@ -10,7 +10,7 @@ Destiny is an ETL allowing to build local database from [League of Legends](http
 
 ## Configuration
 
-Rename `config.example.yml` to `config.yml` then change the relevant fields.
+Rename `config.example.yaml` to `config.yaml` then change the relevant fields.
 
 
 ## Project Architecture
@@ -57,6 +57,9 @@ Destiny/
 | -- README.md
 | -- requirements.txt
 ```
+## Database schema
+
+![database schema of Destiny](./doc/schema_database_destiny.png)
 
 ## License
 
