@@ -8,7 +8,7 @@ except ImportError:
     from yaml import Loader, Dumper, load
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(ROOT_DIR, "../config.yml")) as f:
+with open(os.path.join(ROOT_DIR, "../config.yaml")) as f:
     file_dict = load(f)
     API_KEY = file_dict['api-key'].strip()
     settings_log.debug("API KEY: %s" % API_KEY)
