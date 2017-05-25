@@ -11,7 +11,15 @@ def load_data(p_session, p_data):
     :return: None
     """
     try:
+        data_to_print = 3
+        s_data = "["
+        s_data += ",".join(str(d) for d in p_data[:data_to_print])
+        if len(p_data) > data_to_print:
+            s_data += ", ..."
+        s_data += "]"
+        db_log.debug("Adding data {} to session".format(s_data))
         p_session.add_all(p_data)
+        db_log.debug("Commiting")
         p_session.commit()
     except IntegrityError as IE:
         db_log.error(IE)
