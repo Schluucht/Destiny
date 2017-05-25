@@ -11,6 +11,17 @@ from destiny.main.bdd.models.stats import Stats
 from destiny.main.destinyexception import DestinyException
 from destiny.main.destinylogger import ext_log
 
+def extract_master_sum_id():
+    """
+    Extract random player from master queue.
+
+    :return: master_summoner_id (int)
+    """
+    #think about season reseting and master league being empty
+    res_request = api_call.get_master()
+    master_summoner_id =  res_request['entries'][randint(0, len(res_request['entries']))-1]
+    return master_summoner_id['playerOrTeamId']
+
 
 def extract_summoners(p_session, nb_sum_needed):
     """
@@ -24,8 +35,8 @@ def extract_summoners(p_session, nb_sum_needed):
     summoners_stack = set()
     data_summoner = list()
     # initialize summoner_stack with summoner id known
-    summoners_stack.add(21965576)  # need to be configurable
-    # summoners_stack.add(1)  # need to be configurable
+    random_summoner = extract_master_sum_id()
+    summoners_stack.add(random_summoner)  # need to be configurable
 
     if len(summoners_stack) == 0:
         one_summoner = p_session.query(Players.summonerId).one()
