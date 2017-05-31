@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
-from destiny.main.destinylogger import db_log
 
+from destiny.main.destinylogger import db_log
 
 def load_data(p_session, p_data):
     """
@@ -13,9 +13,9 @@ def load_data(p_session, p_data):
     try:
         p_session.add_all(p_data)
         p_session.commit()
-    except IntegrityError as IE:
-        db_log.error(IE)
-        raise IE
+    except Error as err:
+        db_log.error(err)
+        p_session.rollback()
 
 
 def load_timelines(p_session, data):
@@ -31,3 +31,8 @@ def load_timelines(p_session, data):
             load_data(p_session, frame['stats'])
             load_data(p_session, frame['item_event'])
             load_data(p_session, frame['kill_event'])
+            load_data(p_session, frame['build_event'])
+            load_data(p_session, frame['ward_event'])
+            load_data(p_session, frame['events'])
+            load_data(p_session, frame['monster_event'])
+            load_data(p_session, frame['assist_event'])

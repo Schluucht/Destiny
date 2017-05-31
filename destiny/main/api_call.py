@@ -132,7 +132,10 @@ def get_matchlist(id_account):
     :param id_account:
     :return:
     """
-    url = settings.REGION + '/lol/match/v3/matchlists/by-account/'+str(id_account)+'/recent?api_key='+settings.API_KEY
+    if settings.NB_MATCHES_BY_PLAYER <= 0:
+        raise ValueError('Number of matches wanted must be superior to zero')
+
+    url = settings.REGION + 'lol/match/v3/matchlists/by-account/'+str(id_account)+'?queue='+str(settings.TYPE_OF_GAME_NEEDED)+'&endIndex='+str(settings.NB_MATCHES_BY_PLAYER)+'&beginIndex=0&api_key='+settings.API_KEY
     return do_query(url)
 
 
