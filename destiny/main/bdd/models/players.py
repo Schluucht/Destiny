@@ -4,7 +4,6 @@ from sqlalchemy.sql.sqltypes import BigInteger, CHAR, DATE
 from destiny.main.bdd import Base
 from destiny.utils import rep_model
 
-
 class Players(Base):
     __tablename__ = 'players'
 

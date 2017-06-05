@@ -5,11 +5,14 @@ from destiny.main.bdd import Base
 from destiny.utils import rep_model
 
 
-class ItemEvent(Base):
-    __tablename__ = 'itemEvent'
+class MonstersEvents(Base):
+    __tablename__ = 'monstersEvents'
+
     eventId = Column(BigInteger, primary_key=True)
-    itemId = Column(SmallInteger)
-    eventType = Column(CHAR(20))
+    monsterType = Column(CHAR(20))
+    monsterSubType = Column(CHAR(20))
+    x = Column(SmallInteger)
+    y = Column(SmallInteger)
 
     def __repr__(self):
         return rep_model(self)

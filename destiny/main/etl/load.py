@@ -13,7 +13,7 @@ def load_data(p_session, p_data):
     try:
         p_session.add_all(p_data)
         p_session.commit()
-    except Error as err:
+    except IntegrityError as err:
         db_log.error(err)
         p_session.rollback()
 

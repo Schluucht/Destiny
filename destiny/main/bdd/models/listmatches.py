@@ -4,7 +4,6 @@ from sqlalchemy.sql.sqltypes import BigInteger
 from destiny.main.bdd import Base
 from destiny.utils import rep_model
 
-
 class ListMatches(Base):
     __tablename__ = 'listMatches'
 

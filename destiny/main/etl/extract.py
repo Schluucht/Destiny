@@ -10,12 +10,12 @@ from destiny.main.bdd.models.participants import Participants
 from destiny.main.bdd.models.participantstats import ParticipantStats
 from destiny.main.bdd.models.timelines import Timelines
 from destiny.main.bdd.models.events import Events
-from destiny.main.bdd.models.wardevent import WardEvent
-from destiny.main.bdd.models.itemevent import ItemEvent
-from destiny.main.bdd.models.killevent import KillEvent
-from destiny.main.bdd.models.buildevent import BuildEvent
-from destiny.main.bdd.models.monsterevent import MonsterEvent
-from destiny.main.bdd.models.assistevent import AssistEvent
+from destiny.main.bdd.models.wardsevents import WardsEvents
+from destiny.main.bdd.models.itemsevents import ItemsEvents
+from destiny.main.bdd.models.killsevents import KillsEvents
+from destiny.main.bdd.models.buildingevents import BuildingEvents
+from destiny.main.bdd.models.monstersevents import MonstersEvents
+from destiny.main.bdd.models.assistsevents import AssistsEvents
 from destiny.main.bdd.models.matches import Matches 
 from destiny.main.bdd.models.bans import Bans
 from destiny.main.bdd.models.listmatches import ListMatches
@@ -69,10 +69,15 @@ def extract_summoners(p_session, nb_sum_needed):
         # for each league we extract all summoner id
         for league in leagues:
             tier = league['tier']
-            for entrie in league['entries']:
-                if entrie['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
-                    summoners_stack.add(entrie.get('playerOrTeamId'))
-                    summoner_id = entrie.get('playerOrTeamId')
+            for entry in league['entries']:
+                if entry['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
+                    try:
+                        summoner_id = entry['playerOrTeamId']
+                        summoners_stack.add(summoner_id)
+                    except KeyError:
+                        s_exce = "No playerOrTeamId key found in this entry"
+                        ext_log.error(s_exce)
+                        raise DestinyException(s_exce)
                     last_refresh = datetime.now()
                     # date format to mysql
                     last_refresh = last_refresh.strftime('%Y-%m-%d')
@@ -226,71 +231,71 @@ def extract_stats_participants(matches):
         for participant in match['participants']:
             tpl_data_participant = (
                 gameId,
-                participant['stats'].get('participantId'),
-                participant['stats'].get('physicalDamageDealt'),
-                participant['stats'].get('neutralMinionsKilledTeamJungle'),
-                participant['stats'].get('magicDamageDealt'),
-                participant['stats'].get('totalPlayerScore'),
-                participant['stats'].get('deaths'),
-                participant['stats'].get('win'),
-                participant['stats'].get('neutralMinionsKilledEnemyJungle'),
-                participant['stats'].get('largestCriticalStrike'),
-                participant['stats'].get('totalDamageDealt'),
-                participant['stats'].get('magicDamageDealtToChampions'),
-                participant['stats'].get('visionWardsBoughtInGame'),
-                participant['stats'].get('damageDealtToObjectives'),
-                participant['stats'].get('largestKillingSpree'),
-                participant['stats'].get('item1'),
-                participant['stats'].get('quadraKills'),
-                participant['stats'].get('totalTimeCrowdControlDealt'),
-                participant['stats'].get('longestTimeSpentLiving'),
-                participant['stats'].get('wardsKilled'),
-                participant['stats'].get('firstTowerAssist'),
-                participant['stats'].get('firstTowerKill'),
-                participant['stats'].get('item2'),
-                participant['stats'].get('item3'),
-                participant['stats'].get('item0'),
-                participant['stats'].get('firstBloodAssist'),
-                participant['stats'].get('visionScore'),
-                participant['stats'].get('wardsPlaced'),
-                participant['stats'].get('item4'),
-                participant['stats'].get('item5'),
-                participant['stats'].get('item6'),
-                participant['stats'].get('turretKills'),
-                participant['stats'].get('tripleKills'),
-                participant['stats'].get('damageSelfMitigated'),
-                participant['stats'].get('champLevel'),
-                participant['stats'].get('firstInhibitorKill'),
-                participant['stats'].get('goldEarned'),
-                participant['stats'].get('magicalDamageTaken'),
-                participant['stats'].get('kills'),
-                participant['stats'].get('doubleKills'),
-                participant['stats'].get('trueDamageTaken'),
-                participant['stats'].get('firstInhibitorAssist'),
-                participant['stats'].get('assists'),
-                participant['stats'].get('unrealKills'),
-                participant['stats'].get('neutralMinionsKilled'),
-                participant['stats'].get('objectivePlayerScore'),
-                participant['stats'].get('combatPlayerScore'),
-                participant['stats'].get('damageDealtToTurrets'),
-                participant['stats'].get('physicalDamageDealtToChampions'),
-                participant['stats'].get('goldSpent'),
-                participant['stats'].get('trueDamageDealt'),
-                participant['stats'].get('trueDamageDealtToChampions'),
-                participant['stats'].get('pentaKills'),
-                participant['stats'].get('totalHeal'),
-                participant['stats'].get('totalMinionsKilled'),
-                participant['stats'].get('firstBloodKill'),
-                participant['stats'].get('largestMultiKill'),
-                participant['stats'].get('sightWardsBoughtInGame'),
-                participant['stats'].get('totalDamageDealtToChampions'),
-                participant['stats'].get('totalUnitsHealed'),
-                participant['stats'].get('inhibitorKills'),
-                participant['stats'].get('totalScoreRank'),
-                participant['stats'].get('totalDamageTaken'),
-                participant['stats'].get('killingSprees'),
-                participant['stats'].get('timeCCingOthers'),
-                participant['stats'].get('physicalDamageTaken')
+                participant.get('stats').get('participantId'),
+                participant.get('stats').get('physicalDamageDealt'),
+                participant.get('stats').get('neutralMinionsKilledTeamJungle'),
+                participant.get('stats').get('magicDamageDealt'),
+                participant.get('stats').get('totalPlayerScore'),
+                participant.get('stats').get('deaths'),
+                participant.get('stats').get('win'),
+                participant.get('stats').get('neutralMinionsKilledEnemyJungle'),
+                participant.get('stats').get('largestCriticalStrike'),
+                participant.get('stats').get('totalDamageDealt'),
+                participant.get('stats').get('magicDamageDealtToChampions'),
+                participant.get('stats').get('visionWardsBoughtInGame'),
+                participant.get('stats').get('damageDealtToObjectives'),
+                participant.get('stats').get('largestKillingSpree'),
+                participant.get('stats').get('item1'),
+                participant.get('stats').get('quadraKills'),
+                participant.get('stats').get('totalTimeCrowdControlDealt'),
+                participant.get('stats').get('longestTimeSpentLiving'),
+                participant.get('stats').get('wardsKilled'),
+                participant.get('stats').get('firstTowerAssist'),
+                participant.get('stats').get('firstTowerKill'),
+                participant.get('stats').get('item2'),
+                participant.get('stats').get('item3'),
+                participant.get('stats').get('item0'),
+                participant.get('stats').get('firstBloodAssist'),
+                participant.get('stats').get('visionScore'),
+                participant.get('stats').get('wardsPlaced'),
+                participant.get('stats').get('item4'),
+                participant.get('stats').get('item5'),
+                participant.get('stats').get('item6'),
+                participant.get('stats').get('turretKills'),
+                participant.get('stats').get('tripleKills'),
+                participant.get('stats').get('damageSelfMitigated'),
+                participant.get('stats').get('champLevel'),
+                participant.get('stats').get('firstInhibitorKill'),
+                participant.get('stats').get('goldEarned'),
+                participant.get('stats').get('magicalDamageTaken'),
+                participant.get('stats').get('kills'),
+                participant.get('stats').get('doubleKills'),
+                participant.get('stats').get('trueDamageTaken'),
+                participant.get('stats').get('firstInhibitorAssist'),
+                participant.get('stats').get('assists'),
+                participant.get('stats').get('unrealKills'),
+                participant.get('stats').get('neutralMinionsKilled'),
+                participant.get('stats').get('objectivePlayerScore'),
+                participant.get('stats').get('combatPlayerScore'),
+                participant.get('stats').get('damageDealtToTurrets'),
+                participant.get('stats').get('physicalDamageDealtToChampions'),
+                participant.get('stats').get('goldSpent'),
+                participant.get('stats').get('trueDamageDealt'),
+                participant.get('stats').get('trueDamageDealtToChampions'),
+                participant.get('stats').get('pentaKills'),
+                participant.get('stats').get('totalHeal'),
+                participant.get('stats').get('totalMinionsKilled'),
+                participant.get('stats').get('firstBloodKill'),
+                participant.get('stats').get('largestMultiKill'),
+                participant.get('stats').get('sightWardsBoughtInGame'),
+                participant.get('stats').get('totalDamageDealtToChampions'),
+                participant.get('stats').get('totalUnitsHealed'),
+                participant.get('stats').get('inhibitorKills'),
+                participant.get('stats').get('totalScoreRank'),
+                participant.get('stats').get('totalDamageTaken'),
+                participant.get('stats').get('killingSprees'),
+                participant.get('stats').get('timeCCingOthers'),
+                participant.get('stats').get('physicalDamageTaken')
             )
             # get the column names of the table
             fields_participant = (str(col).split(".")[-1] for col in ParticipantStats.__table__.columns)
@@ -324,12 +329,11 @@ def extract_matches_list(match_id_stack):
 
 def extract_matches_id(p_session, nb_match_needed):
     match_stack = set()
-    # get the summoner Id and flatten the resulting list into a tuple of size `number of summoner ids`
-    summoners_stack = sum(p_session.query(Players.summonerId), ())
+    summoners_stack = [sum_id[0] for sum_id in p_session.query(Players.summonerId).all()]
     while len(match_stack) < nb_match_needed and len(summoners_stack) > 0:
         # get random summoner id in stack
         sum_id = summoners_stack[randint(0, len(summoners_stack))-1]
-        # needed to escape potential infinite loop
+        summoners_stack.remove(sum_id)
         account_id = api_call.get_acount_id(sum_id)
         matches_list = api_call.get_matchlist(account_id.get('accountId'))
         if len(matches_list) > 0:
@@ -433,14 +437,14 @@ def extract_events(p_session, match_id_stack):
                         )
                         fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
                         new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        fields_purchase = (str(col).split(".")[-1] for col in ItemEvent.__table__.columns)
+                        fields_purchase = (str(col).split(".")[-1] for col in ItemsEvents.__table__.columns)
                         data_purchase = (
                             event_id,
                             events.get('itemId'),
                             events.get('type')
                         )
                         # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_purchase_entry = ItemEvent(**dict(zip(fields_purchase, data_purchase)))
+                        new_purchase_entry = ItemsEvents(**dict(zip(fields_purchase, data_purchase)))
                         l_item_event.append(new_purchase_entry)
                         l_events.append(new_events_entry)
                     elif events['type'] == 'CHAMPION_KILL':
@@ -460,8 +464,8 @@ def extract_events(p_session, match_id_stack):
                                     event_id,
                                     assist
                                     )
-                                fields_assist = (str(col).split(".")[-1] for col in AssistEvent.__table__.columns)
-                                new_assist_entry = AssistEvent(**dict(zip(fields_assist, data_assist)))
+                                fields_assist = (str(col).split(".")[-1] for col in AssistsEvents.__table__.columns)
+                                new_assist_entry = AssistsEvents(**dict(zip(fields_assist, data_assist)))
                                 l_assist_ids.append(new_assist_entry)
                         kill_data = (
                             event_id,
@@ -470,9 +474,9 @@ def extract_events(p_session, match_id_stack):
                             events.get('position').get('y')
                         )
                         # get the column names of the table
-                        fields_kill = (str(col).split(".")[-1] for col in KillEvent.__table__.columns)
+                        fields_kill = (str(col).split(".")[-1] for col in KillsEvents.__table__.columns)
                         # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_kill_entry = KillEvent(**dict(zip(fields_kill, kill_data)))
+                        new_kill_entry = KillsEvents(**dict(zip(fields_kill, kill_data)))
                         l_kill_event.append(new_kill_entry)
                         l_events.append(new_events_entry)
                     elif 'WARD' in events['type']:
@@ -492,9 +496,9 @@ def extract_events(p_session, match_id_stack):
                             events.get('wardType'),
                         )
                         # get the column names of the table
-                        fields_ward = (str(col).split(".")[-1] for col in WardEvent.__table__.columns)
+                        fields_ward = (str(col).split(".")[-1] for col in WardsEvents.__table__.columns)
                         # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_ward_entry = WardEvent(**dict(zip(fields_ward, ward_data)))
+                        new_ward_entry = WardsEvents(**dict(zip(fields_ward, ward_data)))
                         l_ward_event.append(new_ward_entry)
                         l_events.append(new_events_entry)
                     elif 'MONSTER' in events['type']:
@@ -516,9 +520,9 @@ def extract_events(p_session, match_id_stack):
                             events.get('position').get('y')
                         )
                         # get the column names of the table
-                        fields_monster = (str(col).split(".")[-1] for col in MonsterEvent.__table__.columns)
+                        fields_monster = (str(col).split(".")[-1] for col in MonstersEvents.__table__.columns)
                         # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_monster_entry = MonsterEvent(**dict(zip(fields_monster, monster_data)))
+                        new_monster_entry = MonstersEvents(**dict(zip(fields_monster, monster_data)))
                         l_monster_event.append(new_monster_entry)
                         l_events.append(new_events_entry)
                     elif 'BUILDING' in events['type']:
@@ -542,9 +546,9 @@ def extract_events(p_session, match_id_stack):
                             events.get('position').get('y')
                         )
                         # get the column names of the table
-                        fields_build = (str(col).split(".")[-1] for col in BuildEvent.__table__.columns)
+                        fields_build = (str(col).split(".")[-1] for col in BuildingEvents.__table__.columns)
                         # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_build_entry = BuildEvent(**dict(zip(fields_build, build_data)))
+                        new_build_entry = BuildingEvents(**dict(zip(fields_build, build_data)))
                         l_build_event.append(new_build_entry)
                         l_events.append(new_events_entry)
             dict_data_frame['stats'] = l_stats_frame

@@ -4,7 +4,6 @@ from sqlalchemy.sql.sqltypes import Boolean, BigInteger, Integer, CHAR, SmallInt
 from destiny.main.bdd import Base
 from destiny.utils import rep_model
 
-
 class ParticipantStats(Base):
     __tablename__ = 'participantstats'
     gameId = Column(BigInteger,ForeignKey("matches.gameId"), primary_key=True)
