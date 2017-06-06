@@ -89,6 +89,56 @@ def extract_summoners(p_session, nb_sum_needed):
                     data_summoner.add(Players(**dict(zip(fields_player, tpl_data_player))))
     return data_summoner
 
+def extract_summoners(p_session, nb_sum_needed):
+    """
+    Extract a list of `Players` objects from riot games API.
+
+    :param p_session: Connexion object
+    :param nb_sum_needed: int
+    :return: data_summoner (list)
+    """
+    # initialize variable
+    summoners_stack = set()
+    data_summoner = set()
+    # initialize summoner_stack with summoner id known
+    random_summoner = extract_master_sum_id()
+    summoners_stack.add(random_summoner)  # need to be configurable
+
+    if len(summoners_stack) == 0:
+        one_summoner = p_session.query(Players.summonerId).one()
+        summoners_stack.add(one_summoner)
+
+    while len(summoners_stack) < nb_sum_needed:
+        try:
+            # get random summoner id in stack
+            sum_id = summoners_stack.pop()
+        except KeyError:
+            s_exce = "No summoner retrieved"
+            ext_log.error(s_exce)
+            raise DestinyException(s_exce)
+        # needed to escape potential infinite loop
+        leagues = api_call.get_league_by_summoner(sum_id)
+
+        # for each league we extract all summoner id
+        for league in leagues:
+            tier = league['tier']
+            for entry in league['entries']:
+                if entry['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
+                    try:
+                        summoner_id = entry['playerOrTeamId']
+                        summoners_stack.add(summoner_id)
+                    except KeyError:
+                        s_exce = "No playerOrTeamId key found in this entry"
+                        ext_log.error(s_exce)
+                        raise DestinyException(s_exce)
+                    last_refresh = datetime.now()
+                    # date format to mysql
+                    last_refresh = last_refresh.strftime('%Y-%m-%d')
+                    # get account id
+                    account_id = api_call.get_acount_id(summoner_id).get('accountId')
+                    # todo make it dynamic with the dictzip thing
+                    data_summoner.add(Players(summonerId=summoner_id, accountId=account_id, tier=tier, lastRefresh=last_refresh))
+    return data_summoner
 
 def extract_matches_data(match_id_stack):
     """
@@ -115,18 +165,14 @@ def extract_matches(matches):
     """
     data_match = set()
     for match in matches:
-        tpl_data_match = (
-            match.get('gameId'),
-            match.get('platformId'),
-            match.get('seasonId'),
-            match.get('gameVersion'),
-            match.get('gameDuration')
+        some_match = Matches(
+            gameId=match.get('gameId'),
+            platformId=match.get('platformId'),
+            season=match.get('seasonId'),
+            gameVersion=match.get('gameVersion'),
+            timestamp=match.get('gameDuration') 
         )
-        # get the column names of the table
-        fields_match = (str(col).split(".")[-1] for col in Matches.__table__.columns)
-        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-        new_match_entry = Matches(**dict(zip(fields_match, tpl_data_match)))
-        data_match.add(new_match_entry)
+        data_match.add(some_match)
     return data_match
 
 
@@ -141,27 +187,23 @@ def extract_team_stats(matches):
     for match in matches:
         gameId = match['gameId']
         for team in match['teams']:
-            tpl_team_stats = (
-                gameId,
-                team.get('teamId'),
-                team.get('firstDragon'),
-                team.get('firstInhibitor'),
-                team.get('baronKills'),
-                team.get('firstRiftHerald'),
-                team.get('firstBaron'),
-                team.get('riftHeraldKills'),
-                team.get('firstBlood'),
-                team.get('firstTower'),
-                team.get('inhibitorKills'),
-                team.get('towerKills'),
-                team.get('win'),
-                team.get('dragonKills')
+            some_team_stats = TeamStats(
+                gameId=gameId,
+                teamId=team.get('teamId'),
+                firstDragon=team.get('firstDragon'),
+                firstInhibitor=team.get('firstInhibitor'),
+                baronKills=team.get('baronKills'),
+                firstRiftHerald=team.get('firstRiftHerald'),
+                firstBaron=team.get('firstBaron'),
+                riftHeraldKills=team.get('riftHeraldKills'),
+                firstBlood=team.get('firstBlood'),
+                firstTower=team.get('firstTower'),
+                inhibitorKills=team.get('inhibitorKills'),
+                towerKills=team.get('towerKills'),
+                win=team.get('win'),
+                dragonKills=team.get('dragonKills')
             )
-            # get the column names of the table
-            fields_team_stats = (str(col).split(".")[-1] for col in TeamStats.__table__.columns)
-            # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-            new_team_stats_entry = TeamStats(**dict(zip(fields_team_stats, tpl_team_stats)))
-            data_team_stats.add(new_team_stats_entry)
+            data_team_stats.add(some_team_stats)
     return data_team_stats
 
 
@@ -177,17 +219,13 @@ def extract_bans(matches):
         gameId = match['gameId']
         for team in match['teams']:
             for ban in team['bans']:
-                tpl_ban = (
-                    gameId,
-                    team.get('teamId'),
-                    ban.get('pickTurn'),
-                    ban.get('championId'),
+                some_ban = Bans(
+                    gameId=gameId,
+                    teamId=team.get('teamId'),
+                    pickTurn=ban.get('pickTurn'),
+                    championId=ban.get('championId'),
                 )
-                # get the column names of the table
-                fields_bans = (str(col).split(".")[-1] for col in Bans.__table__.columns)
-                # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                new_bans_entry = Bans(**dict(zip(fields_bans, tpl_ban)))
-                data_bans.add(new_bans_entry)
+                data_bans.add(some_ban)
 
     return data_bans
 
@@ -202,20 +240,16 @@ def extract_participants(matches):
     for match in matches:
         gameId = match['gameId']
         for participant in match['participants']:
-            tpl_data_participant = (
-                gameId,
-                participant.get('participantId'),
-                participant.get('teamId'),
-                participant.get('highestAchievedSeasonTier'),
-                participant.get('championId'),
-                participant.get('spell1Id'),
-                participant.get('spell2Id')
+            some_participant = Participants(
+                gameId=gameId,
+                participantId=participant.get('participantId'),
+                teamId=participant.get('teamId'),
+                highestAchievedSeasonTier=participant.get('highestAchievedSeasonTier'),
+                championId=participant.get('championId'),
+                spell1Id=participant.get('spell1Id'),
+                spell2Id=participant.get('spell2Id')
             )
-            # get the column names of the table
-            fields_participant = (str(col).split(".")[-1] for col in Participants.__table__.columns)
-            # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-            new_part_entry = Participants(**dict(zip(fields_participant, tpl_data_participant)))
-            data_match.add(new_part_entry)
+            data_match.add(some_participant)
     return data_match
 
 
@@ -229,79 +263,75 @@ def extract_stats_participants(matches):
     for match in matches:
         gameId = match['gameId']
         for participant in match['participants']:
-            tpl_data_participant = (
-                gameId,
-                participant.get('stats').get('participantId'),
-                participant.get('stats').get('physicalDamageDealt'),
-                participant.get('stats').get('neutralMinionsKilledTeamJungle'),
-                participant.get('stats').get('magicDamageDealt'),
-                participant.get('stats').get('totalPlayerScore'),
-                participant.get('stats').get('deaths'),
-                participant.get('stats').get('win'),
-                participant.get('stats').get('neutralMinionsKilledEnemyJungle'),
-                participant.get('stats').get('largestCriticalStrike'),
-                participant.get('stats').get('totalDamageDealt'),
-                participant.get('stats').get('magicDamageDealtToChampions'),
-                participant.get('stats').get('visionWardsBoughtInGame'),
-                participant.get('stats').get('damageDealtToObjectives'),
-                participant.get('stats').get('largestKillingSpree'),
-                participant.get('stats').get('item1'),
-                participant.get('stats').get('quadraKills'),
-                participant.get('stats').get('totalTimeCrowdControlDealt'),
-                participant.get('stats').get('longestTimeSpentLiving'),
-                participant.get('stats').get('wardsKilled'),
-                participant.get('stats').get('firstTowerAssist'),
-                participant.get('stats').get('firstTowerKill'),
-                participant.get('stats').get('item2'),
-                participant.get('stats').get('item3'),
-                participant.get('stats').get('item0'),
-                participant.get('stats').get('firstBloodAssist'),
-                participant.get('stats').get('visionScore'),
-                participant.get('stats').get('wardsPlaced'),
-                participant.get('stats').get('item4'),
-                participant.get('stats').get('item5'),
-                participant.get('stats').get('item6'),
-                participant.get('stats').get('turretKills'),
-                participant.get('stats').get('tripleKills'),
-                participant.get('stats').get('damageSelfMitigated'),
-                participant.get('stats').get('champLevel'),
-                participant.get('stats').get('firstInhibitorKill'),
-                participant.get('stats').get('goldEarned'),
-                participant.get('stats').get('magicalDamageTaken'),
-                participant.get('stats').get('kills'),
-                participant.get('stats').get('doubleKills'),
-                participant.get('stats').get('trueDamageTaken'),
-                participant.get('stats').get('firstInhibitorAssist'),
-                participant.get('stats').get('assists'),
-                participant.get('stats').get('unrealKills'),
-                participant.get('stats').get('neutralMinionsKilled'),
-                participant.get('stats').get('objectivePlayerScore'),
-                participant.get('stats').get('combatPlayerScore'),
-                participant.get('stats').get('damageDealtToTurrets'),
-                participant.get('stats').get('physicalDamageDealtToChampions'),
-                participant.get('stats').get('goldSpent'),
-                participant.get('stats').get('trueDamageDealt'),
-                participant.get('stats').get('trueDamageDealtToChampions'),
-                participant.get('stats').get('pentaKills'),
-                participant.get('stats').get('totalHeal'),
-                participant.get('stats').get('totalMinionsKilled'),
-                participant.get('stats').get('firstBloodKill'),
-                participant.get('stats').get('largestMultiKill'),
-                participant.get('stats').get('sightWardsBoughtInGame'),
-                participant.get('stats').get('totalDamageDealtToChampions'),
-                participant.get('stats').get('totalUnitsHealed'),
-                participant.get('stats').get('inhibitorKills'),
-                participant.get('stats').get('totalScoreRank'),
-                participant.get('stats').get('totalDamageTaken'),
-                participant.get('stats').get('killingSprees'),
-                participant.get('stats').get('timeCCingOthers'),
-                participant.get('stats').get('physicalDamageTaken')
+            some_participant = ParticipantStats(
+                gameId=gameId,
+                participantId=participant.get('stats').get('participantId'),
+                physicalDamageDealt=participant.get('stats').get('physicalDamageDealt'),
+                neutralMinionsKilledTeamJungle=participant.get('stats').get('neutralMinionsKilledTeamJungle'),
+                magicDamageDealt=participant.get('stats').get('magicDamageDealt'),
+                totalPlayerScore=participant.get('stats').get('totalPlayerScore'),
+                deaths=participant.get('stats').get('deaths'),
+                win=participant.get('stats').get('win'),
+                neutralMinionsKilledEnemyJungle=participant.get('stats').get('neutralMinionsKilledEnemyJungle'),
+                largestCriticalStrike=participant.get('stats').get('largestCriticalStrike'),
+                totalDamageDealt=participant.get('stats').get('totalDamageDealt'),
+                magicDamageDealtToChampions=participant.get('stats').get('magicDamageDealtToChampions'),
+                visionWardsBoughtInGame=participant.get('stats').get('visionWardsBoughtInGame'),
+                damageDealtToObjectives=participant.get('stats').get('damageDealtToObjectives'),
+                largestKillingSpree=participant.get('stats').get('largestKillingSpree'),
+                item1=participant.get('stats').get('item1'),
+                quadraKills=participant.get('stats').get('quadraKills'),
+                totalTimeCrowdControlDealt=participant.get('stats').get('totalTimeCrowdControlDealt'),
+                longestTimeSpentLiving=participant.get('stats').get('longestTimeSpentLiving'),
+                wardsKilled=participant.get('stats').get('wardsKilled'),
+                firstTowerAssist=participant.get('stats').get('firstTowerAssist'),
+                firstTowerKill=participant.get('stats').get('firstTowerKill'),
+                item2=participant.get('stats').get('item2'),
+                item3=participant.get('stats').get('item3'),
+                item0=participant.get('stats').get('item0'),
+                firstBloodAssist=participant.get('stats').get('firstBloodAssist'),
+                visionScore=participant.get('stats').get('visionScore'),
+                wardsPlaced=participant.get('stats').get('wardsPlaced'),
+                item4=participant.get('stats').get('item4'),
+                item5=participant.get('stats').get('item5'),
+                item6=participant.get('stats').get('item6'),
+                turretKills=participant.get('stats').get('turretKills'),
+                tripleKills=participant.get('stats').get('tripleKills'),
+                damageSelfMitigated=participant.get('stats').get('damageSelfMitigated'),
+                champLevel=participant.get('stats').get('champLevel'),
+                firstInhibitorKill=participant.get('stats').get('firstInhibitorKill'),
+                goldEarned=participant.get('stats').get('goldEarned'),
+                magicalDamageTaken=participant.get('stats').get('magicalDamageTaken'),
+                kills=participant.get('stats').get('kills'),
+                doubleKills=participant.get('stats').get('doubleKills'),
+                trueDamageTaken=participant.get('stats').get('trueDamageTaken'),
+                firstInhibitorAssist=participant.get('stats').get('firstInhibitorAssist'),
+                assists=participant.get('stats').get('assists'),
+                unrealKills=participant.get('stats').get('unrealKills'),
+                neutralMinionsKilled=participant.get('stats').get('neutralMinionsKilled'),
+                objectivePlayerScore=participant.get('stats').get('objectivePlayerScore'),
+                combatPlayerScore=participant.get('stats').get('combatPlayerScore'),
+                damageDealtToTurrets=participant.get('stats').get('damageDealtToTurrets'),
+                physicalDamageDealtToChampions=participant.get('stats').get('physicalDamageDealtToChampions'),
+                goldSpent=participant.get('stats').get('goldSpent'),
+                trueDamageDealt=participant.get('stats').get('trueDamageDealt'),
+                trueDamageDealtToChampions=participant.get('stats').get('trueDamageDealtToChampions'),
+                pentaKills=participant.get('stats').get('pentaKills'),
+                totalHeal=participant.get('stats').get('totalHeal'),
+                totalMinionsKilled=participant.get('stats').get('totalMinionsKilled'),
+                firstBloodKill=participant.get('stats').get('firstBloodKill'),
+                largestMultiKill=participant.get('stats').get('largestMultiKill'),
+                sightWardsBoughtInGame=participant.get('stats').get('sightWardsBoughtInGame'),
+                totalDamageDealtToChampions=participant.get('stats').get('totalDamageDealtToChampions'),
+                totalUnitsHealed=participant.get('stats').get('totalUnitsHealed'),
+                inhibitorKills=participant.get('stats').get('inhibitorKills'),
+                totalScoreRank=participant.get('stats').get('totalScoreRank'),
+                totalDamageTaken=participant.get('stats').get('totalDamageTaken'),
+                killingSprees=participant.get('stats').get('killingSprees'),
+                timeCCingOthers=participant.get('stats').get('timeCCingOthers'),
+                physicalDamageTaken=participant.get('stats').get('physicalDamageTaken')
             )
-            # get the column names of the table
-            fields_participant = (str(col).split(".")[-1] for col in ParticipantStats.__table__.columns)
-            # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-            new_part_entry = ParticipantStats(**dict(zip(fields_participant, tpl_data_participant)))
-            data_participant.add(new_part_entry)
+            data_participant.add(some_participant)
     return data_participant
 
 def extract_matches_list(match_id_stack):
@@ -315,15 +345,8 @@ def extract_matches_list(match_id_stack):
 
     for match in match_id_stack:
         matchid = int(match[1])
-        tpl_data_list_matches = (
-            match[0],
-            matchid
-            )
-        # get the column names of the table
-        fields_list_match = (str(col).split(".")[-1] for col in ListMatches.__table__.columns)
-        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-        new_list_match_entry = ListMatches(**dict(zip(fields_list_match, tpl_data_list_matches)))
-        data_match.add(new_list_match_entry)
+        some_list_matches = ListMatches(summonerId=match[0], gameId=matchid)
+        data_match.add(some_list_matches)
     return data_match
 
 
@@ -356,16 +379,12 @@ def extract_timelines(match_id_stack):
         for frame in game_timeline['frames']:
             timestamp = frame.get('timestamp')
             for participant in frame['participantFrames']:
-                tpl_timelines_data = (
-                    gameId,
-                    participant,
-                    timestamp
+                some_timelines_data = Timelines(
+                    gameId=gameId,
+                    participantId=participant,
+                    timestamp=timestamp
                     )
-                # get the column names of the table
-                fields_timeline = (str(col).split(".")[-1] for col in Timelines.__table__.columns)
-                # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                new_part_entry = Timelines(**dict(zip(fields_timeline, tpl_timelines_data)))
-                data_timelines.add(new_part_entry)
+                data_timelines.add(some_timelines_data)
     return data_timelines
 
 
@@ -407,159 +426,112 @@ def extract_events(p_session, match_id_stack):
             nb_frame_viewed += 1
             if nb_frame_viewed < len(timeline['frames']):
                 for _, value in frame['participantFrames'].items():
-                    # get the column names of the table
-                    fields_stats = (str(col).split(".")[-1] for col in Stats.__table__.columns)
-                    # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                    data_stats = (
-                        gameId,
-                        value.get('participantId'),
-                        timestamp,
-                        value.get('level'),
-                        value.get('currentGold'),
-                        value.get('minionsKilled'),
-                        value.get('xp'),
-                        value.get('jungleMinionsKilled'),
-                        value.get('position').get('x'),
-                        value.get('position').get('y')
+                    some_stats = Stats(
+                        gameId=gameId,
+                        participantId=value.get('participantId'),
+                        timestamp=timestamp,
+                        level=value.get('level'),
+                        currentGold=value.get('currentGold'),
+                        minionsKilled=value.get('minionsKilled'),
+                        xp=value.get('xp'),
+                        jungleMinionsKilled=value.get('jungleMinionsKilled'),
+                        x=value.get('position').get('x'),
+                        y=value.get('position').get('y')
                     )
-                    new_stats_entry = Stats(**dict(zip(fields_stats, data_stats)))
-                    l_stats_frame.append(new_stats_entry)
+                    l_stats_frame.append(some_stats)
                 # event(kill,deaths,assist,ward placed) for each minute and for each jungler
                 for events in frame['events']:
                     event_id += 1
                     if 'ITEM' in events['type']:
-                        data_event = (
-                            event_id,
-                            gameId,
-                            events.get('participantId'),
-                            events.get('type'),
-                            events.get('timestamp')
+                        some_event = Events(
+                            eventId=event_id,
+                            gameId=gameId,
+                            participantId=events.get('participantId'),
+                            type_event=events.get('type'),
+                            timestamp=events.get('timestamp')
                         )
-                        fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
-                        new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        fields_purchase = (str(col).split(".")[-1] for col in ItemsEvents.__table__.columns)
-                        data_purchase = (
-                            event_id,
-                            events.get('itemId'),
-                            events.get('type')
+                        some_purchase = ItemsEvents(
+                            eventId=event_id,
+                            itemId=events.get('itemId'),
+                            eventType=events.get('type')
                         )
-                        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_purchase_entry = ItemsEvents(**dict(zip(fields_purchase, data_purchase)))
-                        l_item_event.append(new_purchase_entry)
-                        l_events.append(new_events_entry)
+                        l_item_event.append(some_purchase)
+                        l_events.append(some_event)
                     elif events['type'] == 'CHAMPION_KILL':
-                        data_event = (
-                            event_id,
-                            gameId,
-                            events.get('killerId'),
-                            events.get('type'),
-                            events.get('timestamp')
+                        some_event = Events(
+                            eventId=event_id,
+                            gameId=gameId,
+                            participantId=events.get('killerId'),
+                            type_event=events.get('type'),
+                            timestamp=events.get('timestamp')
                         )
-                        fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
-                        new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        # we can concatenate the IDs in order to create an ID for the table assist
                         if len(events['assistingParticipantIds']) > 0:
                             for assist in events['assistingParticipantIds']:
-                                data_assist = (
-                                    event_id,
-                                    assist
+                                some_assist = AssistsEvents(
+                                    eventId=event_id,
+                                    participantId=assist
                                     )
-                                fields_assist = (str(col).split(".")[-1] for col in AssistsEvents.__table__.columns)
-                                new_assist_entry = AssistsEvents(**dict(zip(fields_assist, data_assist)))
-                                l_assist_ids.append(new_assist_entry)
-                        kill_data = (
-                            event_id,
-                            events.get('victimId'),
-                            events.get('position').get('x'),
-                            events.get('position').get('y')
+                                l_assist_ids.append(some_assist)
+                        some_kill_data = KillsEvents(
+                            eventId=event_id,
+                            victimId=events.get('victimId'),
+                            x=events.get('position').get('x'),
+                            y=events.get('position').get('y')
                         )
-                        # get the column names of the table
-                        fields_kill = (str(col).split(".")[-1] for col in KillsEvents.__table__.columns)
-                        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_kill_entry = KillsEvents(**dict(zip(fields_kill, kill_data)))
-                        l_kill_event.append(new_kill_entry)
-                        l_events.append(new_events_entry)
+                        l_kill_event.append(some_kill_data)
+                        l_events.append(some_event)
                     elif 'WARD' in events['type']:
-                        data_event = (
-                            event_id,
-                            gameId,
-                            utils.getWardParticipant(events),
-                            events.get('type'),
-                            events.get('timestamp')
+                        some_event = Events(
+                            eventId=event_id,
+                            gameId=gameId,
+                            participantId=utils.getWardParticipant(events),
+                            type_event=events.get('type'),
+                            timestamp=events.get('timestamp')
                         )
-                        fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
-                        new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        # we can concatenate the IDs in order to create an ID for the table assist
-                        ward_data = (
-                            event_id,
-                            events.get('type'),
-                            events.get('wardType'),
+                        some_ward = WardsEvents(
+                            eventId=event_id,
+                            eventType=events.get('type'),
+                            wardType=events.get('wardType'),
                         )
-                        # get the column names of the table
-                        fields_ward = (str(col).split(".")[-1] for col in WardsEvents.__table__.columns)
-                        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_ward_entry = WardsEvents(**dict(zip(fields_ward, ward_data)))
-                        l_ward_event.append(new_ward_entry)
-                        l_events.append(new_events_entry)
+                        l_ward_event.append(some_ward)
+                        l_events.append(some_event)
                     elif 'MONSTER' in events['type']:
-                        data_event = (
-                            event_id,
-                            gameId,
-                            events.get('killerId'),
-                            events.get('type'),
-                            events.get('timestamp')
+                        some_event = Events(
+                            eventId=event_id,
+                            gameId=gameId,
+                            participantId=events.get('killerId'),
+                            type_event=events.get('type'),
+                            timestamp=events.get('timestamp')
                         )
-                        fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
-                        new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        # we can concatenate the IDs in order to create an ID for the table assist
-                        monster_data = (
-                            event_id,
-                            events.get('monsterType'),
-                            events.get('monsterSubType'),
-                            events.get('position').get('x'),
-                            events.get('position').get('y')
+                        monster_data = MonstersEvents(
+                            eventId=event_id,
+                            monsterType=events.get('monsterType'),
+                            monsterSubType=events.get('monsterSubType'),
+                            x=events.get('position').get('x'),
+                            y=events.get('position').get('y')
                         )
-                        # get the column names of the table
-                        fields_monster = (str(col).split(".")[-1] for col in MonstersEvents.__table__.columns)
-                        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_monster_entry = MonstersEvents(**dict(zip(fields_monster, monster_data)))
-                        l_monster_event.append(new_monster_entry)
-                        l_events.append(new_events_entry)
+                        l_monster_event.append(monster_data)
+                        l_events.append(some_event)
                     elif 'BUILDING' in events['type']:
-                        data_event = (
-                            event_id,
-                            gameId,
-                            events.get('killerId'),
-                            events.get('type'),
-                            events.get('timestamp')
+                        some_event = Events(
+                            eventId=event_id,
+                            gameId=gameId,
+                            participantId=events.get('killerId'),
+                            type_event=events.get('type'),
+                            timestamp=events.get('timestamp')
                         )
-                        fields_events = (str(col).split(".")[-1] for col in Events.__table__.columns)
-                        new_events_entry = Events(**dict(zip(fields_events, data_event)))
-                        # we can concatenate the IDs in order to create an ID for the table assist
-                        build_data = (
-                            event_id,
-                            events.get('buildingType'),
-                            events.get('towerType'),
-                            events.get('teamId'),
-                            events.get('laneType'),
-                            events.get('position').get('x'),
-                            events.get('position').get('y')
+                        build_data = BuildingEvents(
+                            eventId=event_id,
+                            buildingType=events.get('buildingType'),
+                            towerType=events.get('towerType'),
+                            teamId=events.get('teamId'),
+                            laneType=events.get('laneType'),
+                            x=events.get('position').get('x'),
+                            y=events.get('position').get('y')
                         )
-                        # get the column names of the table
-                        fields_build = (str(col).split(".")[-1] for col in BuildingEvents.__table__.columns)
-                        # the dict-zip thing create a mapping between fields and data. This is exploded and used as arg
-                        new_build_entry = BuildingEvents(**dict(zip(fields_build, build_data)))
-                        l_build_event.append(new_build_entry)
-                        l_events.append(new_events_entry)
-            dict_data_frame['stats'] = l_stats_frame
-            dict_data_frame['build_event'] = l_build_event
-            dict_data_frame['item_event'] = l_item_event
-            dict_data_frame['events'] = l_events
-            dict_data_frame['kill_event'] = l_kill_event
-            dict_data_frame['ward_event'] = l_ward_event
-            dict_data_frame['monster_event'] = l_monster_event
-            dict_data_frame['assist_event'] = l_assist_ids
-            frames.append(dict_data_frame)
-        matches_timeline.append(frames)
+                        l_build_event.append(build_data)
+                        l_events.append(some_event)
+            matches_timeline += l_stats_frame+l_build_event+l_item_event +l_events+l_kill_event+l_ward_event +l_monster_event +l_assist_ids
+
     return matches_timeline
 

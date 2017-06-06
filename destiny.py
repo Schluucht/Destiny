@@ -4,6 +4,16 @@ import destiny.settings as settings
 from destiny.main.bdd import clean_database, create_tables
 from destiny.main.bdd.connexion import engine, Session
 from destiny.main.destinylogger import db_log
+from destiny.main.bdd.models.players import Players
+from destiny.main.bdd.models.participants import Participants
+from destiny.main.bdd.models.assistsevents import AssistsEvents
+from destiny.main.bdd.models.itemsevents import ItemsEvents
+from destiny.main.bdd.models.stats import Stats
+from destiny.main.bdd.models.killsevents import KillsEvents
+from destiny.main.bdd.models.monstersevents import MonstersEvents
+from destiny.main.bdd.models.buildingevents import BuildingEvents
+from destiny.main.bdd.models.matches import Matches
+
 
 def extract_data(p_session):
     """
@@ -50,7 +60,7 @@ def extract_data(p_session):
 
     db_log.info("Loading minute stats and events entries from riot-games API.")
     each_min_stats = extract.extract_events(p_session, match_id_stack)
-    load.load_timelines(p_session, each_min_stats)
+    load.load_data(p_session, each_min_stats)
 
 
 if __name__ == '__main__':
