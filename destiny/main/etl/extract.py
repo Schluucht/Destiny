@@ -35,6 +35,39 @@ def extract_master_sum_id():
     master_summoner_id = res_request['entries'][randint(0, len(res_request['entries']))-1]
     return master_summoner_id['playerOrTeamId']
 
+def init_summoner_stack(p_session):
+    # initialize variable
+    summoners_stack = set()
+    # initialize summoner_stack with summoner id known
+    random_summoner = extract_master_sum_id()
+    summoners_stack.add(random_summoner)  # need to be configurable
+
+    if len(summoners_stack) == 0:
+        one_summoner = p_session.query(Players.summonerId).one()
+        summoners_stack.add(one_summoner)
+
+    return summoners_stack
+
+def extract_sum_id_from_league(league, summoners_stack, nb_sum_needed):
+    data_summoner = set()
+    tier = league['tier']
+    for entry in league['entries']:
+        if entry['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
+            try:
+                summoner_id = entry['playerOrTeamId']
+                summoners_stack.add(summoner_id)
+            except KeyError:
+                s_exce = "No playerOrTeamId key found in this entry"
+                ext_log.error(s_exce)
+                raise DestinyException(s_exce)
+            last_refresh = datetime.now()
+            # date format to mysql
+            last_refresh = last_refresh.strftime('%Y-%m-%d')
+            # get account id
+            account_id = api_call.get_acount_id(summoner_id).get('accountId')
+            # todo make it dynamic with the dictzip thing
+            data_summoner.add(Players(summonerId=summoner_id, accountId=account_id, tier=tier, lastRefresh=last_refresh))
+    return data_summoner
 
 def extract_summoners(p_session, nb_sum_needed):
     """
@@ -45,15 +78,8 @@ def extract_summoners(p_session, nb_sum_needed):
     :return: data_summoner (list)
     """
     # initialize variable
-    summoners_stack = set()
+    summoners_stack = init_summoner_stack(p_session)
     data_summoner = set()
-    # initialize summoner_stack with summoner id known
-    random_summoner = extract_master_sum_id()
-    summoners_stack.add(random_summoner)  # need to be configurable
-
-    if len(summoners_stack) == 0:
-        one_summoner = p_session.query(Players.summonerId).one()
-        summoners_stack.add(one_summoner)
 
     while len(summoners_stack) < nb_sum_needed:
         try:
@@ -68,77 +94,11 @@ def extract_summoners(p_session, nb_sum_needed):
 
         # for each league we extract all summoner id
         for league in leagues:
-            tier = league['tier']
-            for entry in league['entries']:
-                if entry['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
-                    try:
-                        summoner_id = entry['playerOrTeamId']
-                        summoners_stack.add(summoner_id)
-                    except KeyError:
-                        s_exce = "No playerOrTeamId key found in this entry"
-                        ext_log.error(s_exce)
-                        raise DestinyException(s_exce)
-                    last_refresh = datetime.now()
-                    # date format to mysql
-                    last_refresh = last_refresh.strftime('%Y-%m-%d')
-                    # get account id
-                    account_id = api_call.get_acount_id(summoner_id).get('accountId')
-                    fields_player = (str(col).split(".")[-1] for col in Players.__table__.columns)
-                    tpl_data_player = (summoner_id, account_id, tier, last_refresh)
-                    # todo make it dynamic with the dictzip thing
-                    data_summoner.add(Players(**dict(zip(fields_player, tpl_data_player))))
+            sum_id_to_insert = extract_sum_id_from_league(league, summoners_stack, nb_sum_needed)
+            data_summoner = data_summoner | sum_id_to_insert
+
     return data_summoner
 
-def extract_summoners(p_session, nb_sum_needed):
-    """
-    Extract a list of `Players` objects from riot games API.
-
-    :param p_session: Connexion object
-    :param nb_sum_needed: int
-    :return: data_summoner (list)
-    """
-    # initialize variable
-    summoners_stack = set()
-    data_summoner = set()
-    # initialize summoner_stack with summoner id known
-    random_summoner = extract_master_sum_id()
-    summoners_stack.add(random_summoner)  # need to be configurable
-
-    if len(summoners_stack) == 0:
-        one_summoner = p_session.query(Players.summonerId).one()
-        summoners_stack.add(one_summoner)
-
-    while len(summoners_stack) < nb_sum_needed:
-        try:
-            # get random summoner id in stack
-            sum_id = summoners_stack.pop()
-        except KeyError:
-            s_exce = "No summoner retrieved"
-            ext_log.error(s_exce)
-            raise DestinyException(s_exce)
-        # needed to escape potential infinite loop
-        leagues = api_call.get_league_by_summoner(sum_id)
-
-        # for each league we extract all summoner id
-        for league in leagues:
-            tier = league['tier']
-            for entry in league['entries']:
-                if entry['playerOrTeamId'] not in summoners_stack and len(summoners_stack) < nb_sum_needed:
-                    try:
-                        summoner_id = entry['playerOrTeamId']
-                        summoners_stack.add(summoner_id)
-                    except KeyError:
-                        s_exce = "No playerOrTeamId key found in this entry"
-                        ext_log.error(s_exce)
-                        raise DestinyException(s_exce)
-                    last_refresh = datetime.now()
-                    # date format to mysql
-                    last_refresh = last_refresh.strftime('%Y-%m-%d')
-                    # get account id
-                    account_id = api_call.get_acount_id(summoner_id).get('accountId')
-                    # todo make it dynamic with the dictzip thing
-                    data_summoner.add(Players(summonerId=summoner_id, accountId=account_id, tier=tier, lastRefresh=last_refresh))
-    return data_summoner
 
 def extract_matches_data(match_id_stack):
     """
@@ -531,7 +491,14 @@ def extract_events(p_session, match_id_stack):
                         )
                         l_build_event.append(build_data)
                         l_events.append(some_event)
-            matches_timeline += l_stats_frame+l_build_event+l_item_event +l_events+l_kill_event+l_ward_event +l_monster_event +l_assist_ids
+            matches_timeline += l_stats_frame \
+                              + l_build_event \
+                              + l_item_event \
+                              + l_events \
+                              + l_kill_event \
+                              + l_ward_event \
+                              + l_monster_event \
+                              + l_assist_ids \
 
     return matches_timeline
 

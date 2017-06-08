@@ -35,9 +35,9 @@ class ApiCallContextManager:
             return self.f(url)
         except DestinyApiCallException as api_e:
             if 500 <= api_e.err_code < 600:
-                time_sleep = 180
+                time_sleep = 30
                 api_log.warning(str(api_e) + "-> waiting {}s.".format(time_sleep))
-                time.sleep(180)
+                time.sleep(30)
                 return self.f(url)
             else:
                 api_log.error(str(api_e))
@@ -136,6 +136,7 @@ def get_matchlist(id_account):
         raise ValueError('Number of matches wanted must be superior to zero')
 
     url = settings.REGION + 'lol/match/v3/matchlists/by-account/'+str(id_account)+'?queue='+str(settings.TYPE_OF_GAME_NEEDED)+'&endIndex='+str(settings.NB_MATCHES_BY_PLAYER)+'&beginIndex=0&api_key='+settings.API_KEY
+    print(url)
     return do_query(url)
 
 
