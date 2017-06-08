@@ -22,8 +22,6 @@ with open(os.path.join(ROOT_DIR, "../config.yaml")) as f:
     NB_PLAYERS_NEEDED = int(file_dict['data_to_extract']['nb_players_needed'])
     NB_MATCHES_NEEDED = int(file_dict['data_to_extract']['nb_matches_needed'])
     TYPE_OF_GAME_NEEDED = int(file_dict['data_to_extract']['type_of_game_needed'])
+    NB_MATCHES_BY_PLAYER = int(file_dict['data_to_extract']['nb_matches_by_player'])
 
 REGION = 'https://euw1.api.riotgames.com/'
-
-
-

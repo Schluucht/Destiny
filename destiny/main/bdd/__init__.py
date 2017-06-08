@@ -4,7 +4,6 @@ from destiny.main.bdd.connexion import db_log
 
 Base = declarative_base()
 
-
 def clean_database(p_engine, p_force=False):
     """
     Drop all tables of the database.
