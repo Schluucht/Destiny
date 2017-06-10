@@ -1,9 +1,6 @@
 import warnings
 import logging
 
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-
 
 def deprecated(func):
     """
@@ -39,3 +36,25 @@ def rep_model(self):
     s += ", ".join(l_str_attributes)
     s += ")>"
     return s
+
+
+def get_event_type(event):
+    if 'ITEM' in event:
+        return 'ITEM'
+    elif 'CHAMPION_KILL' in event:
+        return 'CHAMPION'
+    elif 'ELITE_MONSTER_KILL' in event:
+        return 'MONSTER_KILL'
+    elif 'BUILDING_KILL' in event:
+        return 'BUILDING'
+    elif 'WARD' in event:
+        return 'WARD'
+    else:
+        return None
+
+
+def getWardParticipant(data):
+    if 'creatorId' in data:
+        return data.get('creatorId')
+    else :
+        return data.get('killerId')

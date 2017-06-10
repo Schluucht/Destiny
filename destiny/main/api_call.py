@@ -1,14 +1,11 @@
 import time
-import logging
 import requests
 import destiny.settings as settings
-from destiny.utils import stream_handler
-
-api_log = logging.getLogger("api_call_logger")
-api_log.addHandler(stream_handler)
-api_log.setLevel(logging.DEBUG)
+from destiny.main.destinyexception import DestinyApiCallException
+from destiny.main.destinylogger import api_log
 
 d_error_code_msg_s = {
+    200: "Successful",
     400: "Bad request",
     401: "Unauthorized",
     403: "Blacklisted or invalid key",
@@ -20,6 +17,33 @@ d_error_code_msg_s = {
 }
 
 
+class ApiCallContextManager:
+    def __init__(self, f):
+        """
+        If there are no decorator arguments, the function
+        to be decorated is passed to the constructor.
+        """
+        self.f = f
+
+    def __call__(self, url):
+        """
+        The __call__ method is not called until the
+        decorated function is called.
+        """
+        try:
+            return self.f(url)
+        except DestinyApiCallException as api_e:
+            if 500 <= api_e.err_code < 600:
+                time_sleep = 30
+                api_log.warning(str(api_e) + "-> waiting {}s.".format(time_sleep))
+                time.sleep(30)
+                return self.f(url)
+            else:
+                api_log.error(str(api_e))
+                raise api_e
+
+
+@ApiCallContextManager
 def do_query(url):
     """
     Makes the api call and eventually handle errors.
@@ -33,24 +57,28 @@ def do_query(url):
     """
     r = requests.get(url)
     # Code is not 200 if something went wrong
-
+    init_status_string = "Request status %s in api_call.do_query %s" % (
+        r.status_code, d_error_code_msg_s[r.status_code])
+    init_status_string += ". url: %s." % url
     while r.status_code != 200:
-        status_string = "Request status %s in api_call.do_query %s" % (
-            r.status_code, d_error_code_msg_s[r.status_code])
         while r.status_code == 429:
             time_sleep = int(r.headers["Retry-After"]) + 2
-            status_string += " -> Retrying in %s seconds." % time_sleep
+            status_string = init_status_string + " -> Retrying in %s seconds." % time_sleep
             api_log.debug(status_string)
             time.sleep(time_sleep)
             # continue loop with new request
             r = requests.get(url)
+            init_status_string = "Request status %s in api_call.do_query %s" % (
+                r.status_code, d_error_code_msg_s[r.status_code])
+            init_status_string += ". url: %s." % url
         # if status_code is still not 200 after the 429 loop
         if r.status_code != 200:
-            status_string += ". url: %s -> Exiting." % url
-            api_log.error(status_string)
-            # todo change this exit statement to be more permissive with 404 errors for example
-            exit()
-    api_log.debug("Request status %s in api_call.do_query -> Succeed." % r.status_code)
+            status_string = init_status_string
+            api_log.debug(status_string)
+            raise DestinyApiCallException(r.status_code, d_error_code_msg_s[r.status_code])
+
+    api_log.debug(init_status_string)
+
     return r.json()
 
 
@@ -61,6 +89,16 @@ def get_challenger():
     :return:
     """
     url = settings.REGION + 'lol/league/v3/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + settings.API_KEY
+    return do_query(url)
+
+
+def get_master():
+    """
+    API documentation: https://developer.riotgames.com/api-methods/#league-v3/GET_getMasterLeague
+
+    :return:
+    """
+    url = settings.REGION + 'lol/league/v3/masterleagues/by-queue/RANKED_SOLO_5x5?api_key=' + settings.API_KEY
     return do_query(url)
 
 
@@ -93,7 +131,11 @@ def get_matchlist(id_account):
     :param id_account:
     :return:
     """
-    url = settings.REGION + '/lol/match/v3/matchlists/by-account/'+str(id_account)+'/recent?api_key='+settings.API_KEY
+    if settings.NB_MATCHES_BY_PLAYER <= 0:
+        raise ValueError('Number of matches wanted must be superior to zero')
+
+    url = settings.REGION + 'lol/match/v3/matchlists/by-account/'+str(id_account)+'?queue='+str(settings.TYPE_OF_GAME_NEEDED)+'&endIndex='+str(settings.NB_MATCHES_BY_PLAYER)+'&beginIndex=0&api_key='+settings.API_KEY
+    print(url)
     return do_query(url)
 
 
