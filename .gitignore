@@ -51,6 +51,5 @@ Temporary Items
 
 config.yaml
 
-*.dia
 *.png
 .cache/
