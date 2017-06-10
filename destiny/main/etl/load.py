@@ -11,6 +11,7 @@ def load_data(p_session, p_data):
     :return: None
     """
     try:
+        db_log.debug("Commiting")
         p_session.bulk_save_objects(p_data)
         p_session.commit()
 

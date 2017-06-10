@@ -1,5 +1,4 @@
 import time
-import logging
 import requests
 import destiny.settings as settings
 from destiny.main.destinyexception import DestinyApiCallException
